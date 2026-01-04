@@ -93,6 +93,61 @@ function toggleTheme() {
     }
 }
 
+// Sound Manager
+class SoundManager {
+    constructor() {
+        this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+        this.enabled = true;
+    }
+
+    playTone(freq, type, duration, startTime = 0, volume = 0.1) {
+        if (!this.enabled) return;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.frequency.value = freq;
+        osc.type = type;
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(this.ctx.currentTime + startTime);
+        gain.gain.setValueAtTime(volume, this.ctx.currentTime + startTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + startTime + duration);
+        osc.stop(this.ctx.currentTime + startTime + duration);
+    }
+
+    playStart() {
+        if (this.ctx.state === 'suspended') this.ctx.resume();
+        // Use Square wave (retro/game console startup sound) for maximum audibility
+        this.playTone(440, 'square', 0.1, 0, 0.1);
+        this.playTone(880, 'square', 0.2, 0.1, 0.1);
+    }
+
+    playStop() {
+        if (this.ctx.state === 'suspended') this.ctx.resume();
+        this.playTone(400, 'sawtooth', 0.2, 0, 0.1); // Sawtooth is loud
+    }
+
+    playComplete() {
+        if (this.ctx.state === 'suspended') this.ctx.resume();
+        // Triangle waves for chords are pleasant but audible
+        this.playTone(523.25, 'triangle', 0.4, 0, 0.2);   // C5
+        this.playTone(659.25, 'triangle', 0.4, 0.1, 0.2); // E5
+        this.playTone(783.99, 'triangle', 0.6, 0.2, 0.2); // G5
+        this.playTone(1046.50, 'triangle', 0.8, 0.3, 0.2);// C6
+    }
+
+    playCleanup() {
+        if (this.ctx.state === 'suspended') this.ctx.resume();
+        this.playTone(150, 'square', 0.4, 0, 0.1); // Square is very distinct
+    }
+
+    toggle() {
+        this.enabled = !this.enabled;
+        return this.enabled;
+    }
+}
+
+const sounds = new SoundManager();
+
 // Logic: Tasks
 function addTask(title) {
     if (!title.trim()) return;
@@ -105,6 +160,27 @@ function addTask(title) {
     tasks.unshift(newTask); // Add to top
     saveData();
     newTaskInput.value = '';
+}
+
+function startTask(id) {
+    if (activeTaskId === id) return;
+
+    // Stop currently active task if any
+    if (activeTaskId) {
+        pauseTask(activeTaskId);
+    }
+
+    activeTaskId = id;
+    const task = tasks.find(t => t.id === id);
+    if (!task) return;
+
+    // Start new log entry
+    task.timeLog.push({ start: new Date().toISOString(), end: null });
+
+    sounds.playStart();
+    updateGlobalUI(task, 'running');
+    saveData();
+    renderTasks();
 }
 
 function playTask(id) {
@@ -124,6 +200,7 @@ function playTask(id) {
     });
 
     activeTaskId = id;
+    sounds.playStart();
     saveData();
     updateGlobalUI(task, 'running');
 }
@@ -138,6 +215,7 @@ function pauseTask(id) {
         activeLog.end = new Date().toISOString();
     }
 
+    sounds.playStop(); // Added sound call
     // Don't clear activeTaskId immediately so we can show "Paused" state if we want,
     // but typically pause implies no active timer.
     // For the global UI, we might want to keep showing what was just paused.
@@ -169,18 +247,44 @@ function stopTask(id) {
     }
 
     // 2. Move to history
-    history.unshift(task);
-    tasks.splice(taskIndex, 1);
+    // Animate removal
+    const taskEl = document.querySelector(`.todo-item button[onclick="stopTask('${id}')"]`);
+    const parentTaskEl = taskEl ? taskEl.closest('.todo-item') : null;
 
-    // 3. Reset Global UI if this was the active task
-    if (activeTaskId === id) {
-        activeTaskId = null;
-        updateGlobalUI(null, 'idle');
+    if (parentTaskEl) {
+        parentTaskEl.classList.add('animate-slide-out');
+        sounds.playComplete(); // Play success chord
+        setTimeout(() => {
+            // Perform the actual removal and state updates after animation
+            tasks = tasks.filter(t => t.id !== id);
+            history.unshift(task); // Add to history
+
+            // 3. Reset Global UI if this was the active task
+            if (activeTaskId === id) {
+                activeTaskId = null;
+                updateGlobalUI(null, 'idle');
+            }
+
+            saveData();
+            const activeTab = document.querySelector('.tab-btn.active');
+            renderHistory(activeTab ? activeTab.dataset.view : 'day');
+
+        }, 300); // Wait for animation
+    } else {
+        // Fallback: If element not found, remove immediately
+        history.unshift(task);
+        tasks.splice(taskIndex, 1);
+
+        // 3. Reset Global UI if this was the active task
+        if (activeTaskId === id) {
+            activeTaskId = null;
+            updateGlobalUI(null, 'idle');
+        }
+
+        saveData();
+        const activeTab = document.querySelector('.tab-btn.active');
+        renderHistory(activeTab ? activeTab.dataset.view : 'day');
     }
-
-    saveData();
-    const activeTab = document.querySelector('.tab-btn.active');
-    renderHistory(activeTab ? activeTab.dataset.view : 'day');
 }
 
 function closeErrorModal() {
@@ -605,7 +709,102 @@ function renderHistory(view) {
         });
     }
 
+    renderAnalytics(view, filtered, start, end);
     renderStats();
+}
+
+function renderAnalytics(view, data, start, end) {
+    const container = document.getElementById('analyticsChart');
+    if (view === 'day') {
+        container.classList.add('hidden');
+        return;
+    }
+
+    container.classList.remove('hidden');
+    container.innerHTML = '';
+
+    // Group data by day/unit
+    const map = new Map();
+    const labels = [];
+
+    // Generate buckets based on view
+    let current = new Date(start);
+    const endDt = new Date(end);
+    const isYear = view === 'year';
+
+    // Helper to format key
+    const getKey = (d) => {
+        if (isYear) return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        return d.toISOString().split('T')[0];
+    };
+
+    // Month abbreviations for Year view
+    const monthNames = ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"];
+
+    while (current <= endDt) {
+        const k = getKey(current);
+        if (!map.has(k)) { // Avoid dupes if iterating by day in Year view, ensuring unique months
+            map.set(k, 0);
+            const label = isYear ? monthNames[current.getMonth()] : current.getDate();
+            labels.push({ key: k, label: label });
+        }
+
+        if (isYear) {
+            current.setMonth(current.getMonth() + 1); // Jump month
+        } else {
+            current.setDate(current.getDate() + 1); // Jump day
+        }
+    }
+
+    // Fill buckets
+    data.forEach(task => {
+        task.timeLog.forEach(log => {
+            if (!log.end) return;
+            const logDate = new Date(log.start);
+            const k = getKey(logDate);
+            const duration = new Date(log.end) - logDate;
+
+            // Only add if key exists (within range) - safe check
+            // For Year view, we need to be careful if logDate matches the bucket logic
+            // Since we generated keys for the range, it should match.
+            if (map.has(k)) {
+                map.set(k, map.get(k) + duration);
+            }
+        });
+    });
+
+    // Find max for scaling
+    const maxVal = Math.max(...map.values()) || 1;
+
+    // Render Bars
+    const chart = document.createElement('div');
+    chart.className = 'chart-bars';
+
+    labels.forEach(item => {
+        const val = map.get(item.key);
+        const percent = Math.min((val / maxVal) * 100, 100);
+        const barWrap = document.createElement('div');
+        barWrap.className = 'bar-wrap';
+        // For tooltip, maybe nicer full name?
+        barWrap.title = `${item.key}: ${formatTime(val)}`;
+
+        barWrap.innerHTML = `
+            <div class="bar" style="height: ${percent}%;"></div>
+            <div class="bar-label">${item.label}</div>
+        `;
+        chart.appendChild(barWrap);
+    });
+
+    container.appendChild(chart);
+
+    // Add summary header inside
+    const header = document.createElement('div');
+    header.style.textAlign = 'center';
+    header.style.marginBottom = '0.5rem';
+    header.style.fontSize = '0.85rem';
+    header.style.color = 'var(--text-muted)';
+    header.textContent = isYear ? "Monthly Activity Distribution" : "Daily Activity Distribution";
+    container.insertBefore(header, container.firstChild);
 }
 
 function renderStats() {
@@ -725,6 +924,7 @@ function performCleanup(type) {
         saveData();
         const activeTab = document.querySelector('.tab-btn.active');
         renderHistory(activeTab ? activeTab.dataset.view : 'day'); // Safe optional chaining if supported, else checks for null
+        sounds.playCleanup();
         alert(message);
         closeCleanupModal();
     } catch (error) {

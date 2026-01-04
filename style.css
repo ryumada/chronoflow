@@ -162,6 +162,76 @@ body {
     justify-content: center;
 }
 
+/* Analytics Chart */
+.analytics-container {
+    background: var(--bg-input);
+    padding: 1rem;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+}
+
+.chart-bars {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    height: 120px;
+    gap: 4px;
+    padding-bottom: 5px;
+}
+
+.bar-wrap {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 100%;
+    justify-content: flex-end;
+    position: relative;
+    cursor: help;
+}
+
+.bar {
+    width: 60%;
+    background: var(--accent-primary);
+    border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+    transition: height 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    min-height: 2px;
+    opacity: 0.8;
+}
+
+.bar:hover {
+    opacity: 1;
+    box-shadow: 0 0 10px var(--accent-primary-glow);
+}
+
+.bar-label {
+    margin-top: 4px;
+    font-size: 0.65rem;
+    color: var(--text-muted);
+}
+
+body.light-mode .bar {
+    background: var(--accent-primary);
+    opacity: 0.9;
+}
+
+/* Animations */
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes scaleIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+@keyframes slideOutRight { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX(50px); } }
+
+.animate-fade-in { animation: fadeIn 0.3s ease-out forwards; }
+.animate-slide-up { animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+.animate-scale-in { animation: scaleIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+.animate-slide-out { animation: slideOutRight 0.3s ease-in forwards; }
+
+.modal { animation: scaleIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+.modal-overlay { animation: fadeIn 0.2s ease-out forwards; }
+
+.todo-item { animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+.history-item { animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
 /* Utilities */
 .hidden { display: none !important; }
 .btn {
