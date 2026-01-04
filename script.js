@@ -153,6 +153,75 @@ class SoundManager {
         this.playTone(150, 'sawtooth', 0.3, 0, 0.15, 100);
     }
 
+    playSega() {
+        if (this.ctx.state === 'suspended') this.ctx.resume();
+        if (!this.enabled) return;
+
+        const now = this.ctx.currentTime;
+
+        // 1. SE Sound (User specified)
+        // 1. SE Sound (G4 Lead + Bass support)
+        const playSE = (t) => {
+            const freqs = [130.81, 196.00, 261.63, 392.00]; // C3, G3, C4, G4
+            const duration = 0.8;
+
+            freqs.forEach((f, i) => {
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+
+                osc.frequency.value = f;
+                osc.type = 'sawtooth';
+                osc.detune.value = (i - 2) * 8; // Spread detune
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                osc.start(t);
+
+                gain.gain.setValueAtTime(0, t);
+                // Bass notes get slightly more amplitude
+                const noteVol = i < 2 ? 0.08 : 0.06; // Reduce gain
+                gain.gain.linearRampToValueAtTime(noteVol, t + 0.1);
+                gain.gain.setValueAtTime(noteVol, t + 0.4);
+                gain.gain.exponentialRampToValueAtTime(0.001, t + duration);
+
+                osc.stop(t + duration);
+            });
+        };
+
+        // 2. GA Sound (E3 Lead + Deep Bass support)
+        const playGA = (t) => {
+            const freqs = [65.41, 98.00, 130.81, 164.81]; // C2, G2, C3, E3
+            const duration = 1.0;
+            const vol = 0.08; // Reduced from 0.15 to prevent clipping
+
+            freqs.forEach((f, i) => {
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+
+                osc.frequency.value = f;
+                osc.type = 'sawtooth';
+                osc.detune.value = (i % 2 === 0 ? 1 : -1) * 8; // Alternating detune
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                osc.start(t);
+
+                gain.gain.setValueAtTime(0, t);
+                gain.gain.linearRampToValueAtTime(vol, t + 0.05); // Fast attack
+                gain.gain.setValueAtTime(vol, t + duration * 0.7);
+                gain.gain.exponentialRampToValueAtTime(0.001, t + duration);
+
+                osc.stop(t + duration);
+            });
+        };
+
+        // Sequence them
+        playSE(now);
+        playGA(now + 0.50); // Overlap slightly for seamless chant
+    }
+
     toggle() {
         this.enabled = !this.enabled;
         return this.enabled;
@@ -1146,6 +1215,9 @@ function generateReport() {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 }
+
+// SEGA Easter Egg
+document.querySelector('.logo').addEventListener('click', () => sounds.playSega());
 
 // Global Keyboard Shortcuts (Enhanced)
 window.addEventListener('keydown', (e) => {
