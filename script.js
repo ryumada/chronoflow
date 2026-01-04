@@ -96,22 +96,44 @@ class SoundManager {
     constructor() {
         this.ctx = new (window.AudioContext || window.webkitAudioContext)();
         this.enabled = true;
+        this.masterVolume = parseFloat(localStorage.getItem('chrono_volume')) || 0.5; // Default 50%
+
+        // Master Gain Node
+        this.masterGain = this.ctx.createGain();
+        this.masterGain.gain.value = this.masterVolume;
+        this.masterGain.connect(this.ctx.destination);
+    }
+
+    setVolume(value) {
+        let vol = Math.max(0, Math.min(1, value));
+        this.masterVolume = vol;
+        this.masterGain.gain.setValueAtTime(vol, this.ctx.currentTime);
+        localStorage.setItem('chrono_volume', vol);
     }
 
     playTone(freq, type, duration, startTime = 0, volume = 0.1, endFreq = null) {
+        if (this.ctx.state === 'suspended') this.ctx.resume();
         if (!this.enabled) return;
+
         const osc = this.ctx.createOscillator();
         const gain = this.ctx.createGain();
+
         osc.frequency.value = freq;
         if (endFreq) {
             osc.frequency.linearRampToValueAtTime(endFreq, this.ctx.currentTime + startTime + duration);
         }
         osc.type = type;
+
         osc.connect(gain);
-        gain.connect(this.ctx.destination);
+        gain.connect(this.masterGain); // Route to Master Gain
+
         osc.start(this.ctx.currentTime + startTime);
-        gain.gain.setValueAtTime(volume, this.ctx.currentTime + startTime);
+
+        // Envelope
+        gain.gain.setValueAtTime(0, this.ctx.currentTime + startTime);
+        gain.gain.linearRampToValueAtTime(volume, this.ctx.currentTime + startTime + 0.05);
         gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + startTime + duration);
+
         osc.stop(this.ctx.currentTime + startTime + duration);
     }
 
@@ -174,7 +196,7 @@ class SoundManager {
                 osc.detune.value = (i - 2) * 8; // Spread detune
 
                 osc.connect(gain);
-                gain.connect(this.ctx.destination);
+                gain.connect(this.masterGain); // Route to MASTER
 
                 osc.start(t);
 
@@ -204,7 +226,7 @@ class SoundManager {
                 osc.detune.value = (i % 2 === 0 ? 1 : -1) * 8; // Alternating detune
 
                 osc.connect(gain);
-                gain.connect(this.ctx.destination);
+                gain.connect(this.masterGain); // Route to MASTER
 
                 osc.start(t);
 
@@ -1216,6 +1238,37 @@ function generateReport() {
     URL.revokeObjectURL(url);
 }
 
+// Settings Modal Logic
+const settingsBtn = document.getElementById('settingsBtn');
+const settingsModal = document.getElementById('settingsModal');
+const closeSettingsModal = document.getElementById('closeSettingsModal');
+const closeSettingsBtn = document.getElementById('closeSettingsBtn');
+const volumeSlider = document.getElementById('volumeSlider');
+const volumeValue = document.getElementById('volumeValue');
+
+function openSettings() {
+    settingsModal.classList.remove('hidden');
+    const currentVolPercent = Math.round(sounds.masterVolume * 100);
+    volumeSlider.value = currentVolPercent;
+    volumeValue.textContent = `${currentVolPercent}%`;
+}
+
+function closeSettings() {
+    settingsModal.classList.add('hidden');
+}
+
+if (settingsBtn) settingsBtn.addEventListener('click', openSettings);
+if (closeSettingsModal) closeSettingsModal.addEventListener('click', closeSettings);
+if (closeSettingsBtn) closeSettingsBtn.addEventListener('click', closeSettings);
+
+if (volumeSlider) {
+    volumeSlider.addEventListener('input', (e) => {
+        const val = parseInt(e.target.value);
+        volumeValue.textContent = `${val}%`;
+        sounds.setVolume(val / 100);
+    });
+}
+
 // SEGA Easter Egg
 document.querySelector('.logo').addEventListener('click', () => sounds.playSega());
 
@@ -1236,6 +1289,7 @@ window.addEventListener('keydown', (e) => {
         closeConfirmModal();
         closeErrorModal();
         closeCleanupModal();
+        closeSettings();
         closeShortcutsModal();
     }
 

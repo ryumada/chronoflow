@@ -334,8 +334,20 @@ body.light-mode.zen-mode #zenModeBtn {
 }
 .btn-primary { background: var(--accent-primary); color: white; }
 .btn-primary:hover { box-shadow: 0 0 12px var(--accent-primary-glow); }
+.btn-secondary { background: rgba(255,255,255,0.1); color: var(--text-primary); }
+.btn-secondary:hover { background: rgba(255,255,255,0.15); }
 .btn-warning { background: var(--accent-warning); color: black; }
 .btn-danger { background: var(--accent-danger); color: white; }
+
+/* ... (keep existing btn classes) ... */
+
+/* Update Slider Track */
+input[type="range"]::-webkit-slider-runnable-track {
+    width: 100%;
+    height: 6px;
+    background: rgba(255,255,255,0.2); /* Higher contrast line */
+    border-radius: 3px;
+}
 .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-secondary); }
 .btn-outline:hover { border-color: var(--text-primary); color: var(--text-primary); }
 .btn-icon { padding: 0.5rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: transparent; color: var(--text-secondary); }
@@ -639,3 +651,68 @@ body.light-mode.zen-mode #zenModeBtn {
 
 .btn-action-journal { color: var(--text-secondary); }
 .btn-action-journal:hover { color: var(--accent-primary); }
+
+/* Settings Modal Styles */
+.setting-item {
+    margin-bottom: 2rem;
+    background: rgba(255,255,255,0.03);
+    padding: 1.5rem;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+}
+
+.setting-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+input[type="range"] {
+    width: 100%;
+    margin-top: 0.5rem;
+    -webkit-appearance: none;
+    appearance: none;
+    background: transparent;
+    cursor: pointer;
+    height: 6px; /* Taller track target */
+}
+
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    height: 20px;
+    width: 20px;
+    border-radius: 50%;
+    background: var(--accent-primary);
+    margin-top: -7px;
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
+    transition: transform 0.1s, box-shadow 0.2s;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+    transform: scale(1.1);
+    box-shadow: 0 0 0 6px rgba(59, 130, 246, 0.3);
+}
+
+input[type="range"]::-webkit-slider-runnable-track {
+    width: 100%;
+    height: 6px;
+    background: #4B5563; /* Solid Gray for visibility */
+    border-radius: 3px;
+}
+
+input[type="range"]::-moz-range-track {
+    width: 100%;
+    height: 6px;
+    background: #4B5563;
+    border-radius: 3px;
+}
+
+input[type="range"]:focus {
+    outline: none;
+}
+input[type="range"]:focus::-webkit-slider-thumb {
+    box-shadow: 0 0 0 6px rgba(59, 130, 246, 0.4);
+}
