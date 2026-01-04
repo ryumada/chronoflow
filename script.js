@@ -61,10 +61,10 @@ function loadData() {
     }
 }
 
-function saveData() {
+function saveData(skipTasks = false) {
     localStorage.setItem('chrono_tasks', JSON.stringify(tasks));
     localStorage.setItem('chrono_history', JSON.stringify(history));
-    renderTasks(); // Re-render to show updates
+    if (!skipTasks) renderTasks(); // Re-render to show updates
     renderStats();
 }
 
@@ -98,11 +98,14 @@ class SoundManager {
         this.enabled = true;
     }
 
-    playTone(freq, type, duration, startTime = 0, volume = 0.1) {
+    playTone(freq, type, duration, startTime = 0, volume = 0.1, endFreq = null) {
         if (!this.enabled) return;
         const osc = this.ctx.createOscillator();
         const gain = this.ctx.createGain();
         osc.frequency.value = freq;
+        if (endFreq) {
+            osc.frequency.linearRampToValueAtTime(endFreq, this.ctx.currentTime + startTime + duration);
+        }
         osc.type = type;
         osc.connect(gain);
         gain.connect(this.ctx.destination);
@@ -115,8 +118,8 @@ class SoundManager {
     playStart() {
         if (this.ctx.state === 'suspended') this.ctx.resume();
         // Use Square wave (retro/game console startup sound) for maximum audibility
-        this.playTone(440, 'square', 0.1, 0, 0.1);
-        this.playTone(880, 'square', 0.2, 0.1, 0.1);
+        this.playTone(440, 'square', 0.15, 0, 0.1);
+        this.playTone(880, 'square', 0.4, 0.1, 0.1);
     }
 
     playStop() {
@@ -136,6 +139,18 @@ class SoundManager {
     playCleanup() {
         if (this.ctx.state === 'suspended') this.ctx.resume();
         this.playTone(150, 'square', 0.4, 0, 0.1); // Square is very distinct
+    }
+
+    playWarning() {
+        if (this.ctx.state === 'suspended') this.ctx.resume();
+        // Two low square "alert" pulses
+        this.playTone(220, 'square', 0.1, 0, 0.15); // A3
+        this.playTone(165, 'square', 0.2, 0.12, 0.15); // E3 (roughly)
+    }
+
+    playError() {
+        if (this.ctx.state === 'suspended') this.ctx.resume();
+        this.playTone(150, 'sawtooth', 0.3, 0, 0.15, 100);
     }
 
     toggle() {
@@ -237,6 +252,7 @@ function stopTask(id) {
     if (!task.timeLog || task.timeLog.length === 0) {
         document.getElementById('errorMessage').textContent = "This task hasn't been started. You should start tracking time before completing it.";
         document.getElementById('errorModal').classList.remove('hidden');
+        sounds.playError();
         return;
     }
 
@@ -331,6 +347,9 @@ function deleteTask(id) {
     const hasTimeLogs = task.timeLog && task.timeLog.length > 0;
 
     if (hasJournal || hasTimeLogs) {
+        // Play Warning Sound
+        sounds.playWarning();
+
         // Show Custom Modal
         pendingDeleteId = id;
 
@@ -359,16 +378,24 @@ function performDelete(id) {
         updateGlobalUI(null, 'idle');
     }
 
+    let isTodo = false;
     if (tasks.find(t => t.id === id)) {
+        isTodo = true;
         tasks = tasks.filter(t => t.id !== id);
     } else {
         history = history.filter(t => t.id !== id);
     }
 
-    saveData();
-    // Re-render handled by saveData calling renderTasks/Stats, but if it was in history list we need:
-    const activeTab = document.querySelector('.tab-btn.active');
-    if (activeTab) renderHistory(activeTab.dataset.view);
+    if (isTodo) {
+        saveData(false); // Re-render Task List
+    } else {
+        saveData(true); // Skip Task List re-render
+        // Re-render History if visible
+        const activeTab = document.querySelector('.tab-btn.active');
+        if (activeTab) renderHistory(activeTab.dataset.view);
+    }
+
+    sounds.playCleanup();
 
     // Close modal if open
     closeConfirmModal();
@@ -945,6 +972,7 @@ importInput.addEventListener('change', (e) => {
 });
 
 function openCleanupModal() {
+    sounds.playWarning();
     document.getElementById('cleanupModal').classList.remove('hidden');
 }
 
