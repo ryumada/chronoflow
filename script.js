@@ -17,8 +17,6 @@ const historyList = document.getElementById('historyList');
 const globalTimerEl = document.getElementById('globalTimer');
 const activeTaskTitleEl = document.getElementById('activeTaskTitle');
 const activeControls = document.getElementById('activeControls');
-const globalPauseBtn = document.getElementById('globalPauseBtn');
-const globalResumeBtn = document.getElementById('globalResumeBtn');
 
 const tabBtns = document.querySelectorAll('.tab-btn');
 const exportBtn = document.getElementById('exportBtn');
@@ -160,6 +158,7 @@ function addTask(title) {
     tasks.unshift(newTask); // Add to top
     saveData();
     newTaskInput.value = '';
+    renderTasks(newTask.id);
 }
 
 function startTask(id) {
@@ -203,6 +202,7 @@ function playTask(id) {
     sounds.playStart();
     saveData();
     updateGlobalUI(task, 'running');
+    updateTaskDOM(id);
 }
 
 function pauseTask(id) {
@@ -225,8 +225,8 @@ function pauseTask(id) {
     // but the interval is closed.
     saveData();
     updateGlobalUI(task, 'paused');
+    updateTaskDOM(id);
 }
-
 function stopTask(id) {
     const taskIndex = tasks.findIndex(t => t.id === id);
     if (taskIndex === -1) return;
@@ -482,7 +482,7 @@ function copyJournalToClipboard() {
 }
 
 // UI Rendering
-function renderTasks() {
+function renderTasks(newTaskId = null) {
     taskCountBadge.textContent = tasks.length;
     todoList.innerHTML = '';
 
@@ -493,7 +493,19 @@ function renderTasks() {
 
     tasks.forEach(task => {
         const el = document.createElement('div');
-        el.className = `todo-item`;
+        el.className = `todo-item animate-slide-up`;
+
+        // Remove animation class after it finishes so it doesn't re-trigger
+        el.addEventListener('animationend', () => {
+            el.classList.remove('animate-slide-up');
+        });
+
+
+        // Remove helper arg since we just animate everything on render
+        // Animate only if it's the new task - wait, user wants PAGE LOAD animation too.
+        // renderTasks is called on Load and Add/Delete.
+        // So global animation class is fine here.
+
 
         // Determine state
         const isRunning = task.id === activeTaskId && task.timeLog.some(l => l.end === null);
@@ -532,6 +544,48 @@ function renderTasks() {
     window.openJournalModal = openJournalModal;
 }
 
+function updateTaskDOM(taskId) {
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) return;
+
+    // Find Element
+    // We didn't set IDs on the items, so traverse or match by some attribute.
+    // We put data-task-id on duration, so we can find parent.
+    const durationEl = document.querySelector(`.todo-duration[data-task-id="${taskId}"]`);
+    if (!durationEl) return;
+    const taskEl = durationEl.closest('.todo-item');
+    if (!taskEl) return;
+
+    // Determine state
+    const isRunning = task.id === activeTaskId && task.timeLog.some(l => l.end === null);
+
+    // Update Classes
+    if (isRunning) {
+        taskEl.classList.add('active-running');
+        taskEl.classList.remove('active-paused');
+    } else if (task.id === activeTaskId) {
+        taskEl.classList.add('active-paused');
+        taskEl.classList.remove('active-running');
+    } else {
+        taskEl.classList.remove('active-running');
+        taskEl.classList.remove('active-paused');
+    }
+
+    // Update Button
+    const actionContainer = taskEl.querySelector('.todo-actions');
+    // The first button is Play/Pause.
+    // We can just reconstruct the Play/Pause button string or safely replace first child if it matches specific class.
+    // Simpler: Re-render the first button
+    const btnHtml = isRunning
+        ? `<button onclick="pauseTask('${task.id}')" class="btn btn-icon btn-action-pause" title="Pause"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg></button>`
+        : `<button onclick="playTask('${task.id}')" class="btn btn-icon btn-action-play" title="Play"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg></button>`;
+
+    const oldBtn = actionContainer.querySelector('.btn-action-play, .btn-action-pause');
+    if (oldBtn) {
+        oldBtn.outerHTML = btnHtml;
+    }
+}
+
 function updateGlobalUI(task, state) {
     if (!task) {
         activeTaskTitleEl.textContent = "No Task Active";
@@ -545,17 +599,22 @@ function updateGlobalUI(task, state) {
     activeTaskTitleEl.textContent = task.title;
     activeControls.classList.remove('hidden');
 
+    const globalActionBtn = document.getElementById('globalActionBtn');
+
     if (state === 'running') {
         activeTaskTitleEl.style.color = "var(--accent-primary)";
-        globalPauseBtn.classList.remove('hidden');
-        globalResumeBtn.classList.add('hidden');
+        globalActionBtn.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>`;
+        globalActionBtn.title = "Pause";
+        globalActionBtn.className = "btn btn-warning btn-icon";
+        globalActionBtn.onclick = () => pauseTask(task.id);
         document.title = `▶ ${formatTime(getTaskDuration(task))} - ${task.title}`;
     } else {
         // Paused
         activeTaskTitleEl.style.color = "var(--accent-warning)";
-        globalPauseBtn.classList.add('hidden');
-        globalResumeBtn.classList.remove('hidden');
-        globalResumeBtn.onclick = () => playTask(task.id);
+        globalActionBtn.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>`;
+        globalActionBtn.title = "Resume";
+        globalActionBtn.className = "btn btn-primary btn-icon";
+        globalActionBtn.onclick = () => playTask(task.id);
         document.title = `❚❚ ${task.title}`;
     }
 }
@@ -817,8 +876,6 @@ function renderStats() {
 addTaskBtn.addEventListener('click', () => addTask(newTaskInput.value));
 newTaskInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') addTask(newTaskInput.value) });
 
-globalPauseBtn.addEventListener('click', () => { if (activeTaskId) pauseTask(activeTaskId); });
-
 tabBtns.forEach(btn => {
     btn.addEventListener('click', () => {
         // Reset date when switching views? Or keep same "DayOf" focus?
@@ -981,13 +1038,121 @@ document.getElementById('confirmModal').addEventListener('click', (e) => {
     if (e.target.id === 'confirmModal') closeConfirmModal();
 });
 
-// Keyboard Shortcuts
+// Zen Mode Logic
+const zenModeBtn = document.getElementById('zenModeBtn');
+zenModeBtn.addEventListener('click', () => {
+    document.body.classList.toggle('zen-mode');
+});
+
+// Shortcuts Logic
+const shortcutsModal = document.getElementById('shortcutsModal');
+function openShortcutsModal() { shortcutsModal.classList.remove('hidden'); }
+function closeShortcutsModal() { shortcutsModal.classList.add('hidden'); }
+window.closeShortcutsModal = closeShortcutsModal; // Expose global
+
+document.getElementById('helpBtn').addEventListener('click', openShortcutsModal);
+shortcutsModal.addEventListener('click', (e) => {
+    if (e.target.id === 'shortcutsModal') closeShortcutsModal();
+});
+
+// Report Generation Logic
+document.getElementById('exportReportBtn').addEventListener('click', generateReport);
+
+function generateReport() {
+    const activeTab = document.querySelector('.tab-btn.active');
+    const view = activeTab ? activeTab.dataset.view : 'week'; // Default to week report
+
+    // We need to filter based on current view variables.
+    // Since scopes are local, we'll re-calculate the report range based on currentViewDate.
+    // This duplicates logic slightly but is safer than exposing globals.
+    // Or we can just dump "All History within View".
+
+    // Let's create a report for the currently VIEWED items.
+    // Since we don't store filtered list globally, let's re-filter quickly.
+
+    // Re-use logic or just grab everything?
+    // Let's grab everything for simplicity or re-run filter?
+    // Actually, report usually implies "What I see".
+    // Let's assume Week Report for now as it's most useful.
+
+    let report = `# ChronoFlow Report\nGenerated: ${new Date().toLocaleString()}\n\n`;
+
+    // Group history by Date
+    const groups = {};
+    history.forEach(task => {
+        const lastLog = task.timeLog[task.timeLog.length - 1];
+        if (!lastLog) return;
+        const dateKey = new Date(lastLog.end || lastLog.start).toDateString();
+        if (!groups[dateKey]) groups[dateKey] = [];
+        groups[dateKey].push(task);
+    });
+
+    // Sort Dates
+    const sortedDates = Object.keys(groups).sort((a, b) => new Date(b) - new Date(a));
+
+    sortedDates.forEach(date => {
+        report += `## ${date}\n`;
+        const dayTasks = groups[date];
+        let dayTotal = 0;
+
+        dayTasks.forEach(task => {
+            const duration = getTaskDuration(task);
+            dayTotal += duration;
+            report += `- **${task.title}**: ${formatTime(duration)}`;
+            if (task.journal.length > 0) {
+                report += `\n  - *${task.journal.length} notes*`;
+            }
+            report += `\n`;
+        });
+
+        report += `\n**Daily Total**: ${formatTime(dayTotal)}\n\n---\n\n`;
+    });
+
+    const blob = new Blob([report], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `chronoflow_report_${new Date().toISOString().split('T')[0]}.md`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+// Global Keyboard Shortcuts (Enhanced)
 window.addEventListener('keydown', (e) => {
+    // Ignore if typing in an input
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+        if (e.key === 'Escape') {
+            e.target.blur(); // Blur on Esc
+            closeJournalModal();
+            activeControls.classList.remove('hidden'); // Ensure UI returns
+        }
+        return;
+    }
+
     if (e.key === 'Escape') {
         closeJournalModal();
         closeConfirmModal();
         closeErrorModal();
         closeCleanupModal();
+        closeShortcutsModal();
+    }
+
+    if (e.key === '?' && e.shiftKey) {
+        openShortcutsModal();
+    }
+
+    if (e.code === 'Space') {
+        e.preventDefault(); // Prevent scroll
+        if (activeTaskId) {
+            document.getElementById('globalActionBtn').click();
+        } else {
+            // If idle, start the top-most task
+            if (tasks.length > 0) {
+                playTask(tasks[0].id);
+            }
+        }
     }
 });
 

@@ -5,11 +5,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ChronoFlow | Premium Time Tracker</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap"
-        rel="stylesheet">
     <link rel="icon" type="image/png" href="favicon.png">
     <link rel="stylesheet" href="style.css">
 </head>
@@ -22,9 +17,14 @@
                 <span class="logo-icon">⚡</span>
                 <h1>ChronoFlow</h1>
             </div>
-            <div class="header-controls" style="display: flex; gap: 0.5rem; align-items: center;">
-                <button id="themeToggle" class="btn btn-icon" title="Toggle Light/Dark Mode"
-                    style="margin-right: 0.5rem;">
+            <div class="header-controls">
+                <button id="zenModeBtn" class="btn btn-icon" title="Toggle Zen Mode">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <circle cx="12" cy="12" r="4"></circle>
+                    </svg>
+                </button>
+                <button id="themeToggle" class="btn btn-icon" title="Toggle Theme">
                     <svg id="themeIconSun" class="hidden" width="20" height="20" viewBox="0 0 24 24" fill="none"
                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="12" cy="12" r="5" />
@@ -73,21 +73,9 @@
             </div>
             <div class="timer-controls">
                 <!-- Only visible when a task is running/paused -->
-                <div id="activeControls" class="hidden">
-                    <button id="globalPauseBtn" class="btn btn-warning btn-lg">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2">
-                            <rect x="6" y="4" width="4" height="16"></rect>
-                            <rect x="14" y="4" width="4" height="16"></rect>
-                        </svg>
-                        Pause
-                    </button>
-                    <button id="globalResumeBtn" class="btn btn-primary btn-lg hidden">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2">
-                            <polygon points="5 3 19 12 5 21 5 3"></polygon>
-                        </svg>
-                        Resume
+                <div id="activeControls" class="active-controls hidden">
+                    <button id="globalActionBtn" class="btn btn-primary btn-icon" title="Toggle Timer">
+                        <!-- Icon injected by JS -->
                     </button>
                 </div>
             </div>
@@ -137,6 +125,16 @@
                             </button>
                             <button id="todayBtn" class="btn btn-outline btn-xs">Now</button>
                             <span id="historyRangeLabel">Today</span>
+                            <button id="exportReportBtn" class="btn btn-icon btn-sm" title="Export Report">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                    <polyline points="14 2 14 8 20 8"></polyline>
+                                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                                    <polyline points="10 9 9 9 8 9"></polyline>
+                                </svg>
+                            </button>
                             <button id="nextPeriodBtn" class="btn btn-icon btn-sm" title="Next">
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -301,6 +299,38 @@
             </div>
         </div>
     </div>
+
+    <!-- Shortcuts Modal -->
+    <div id="shortcutsModal" class="modal-overlay hidden">
+        <div class="modal" style="max-width: 400px; height: auto;">
+            <div class="modal-header">
+                <h3>Keyboard Shortcuts</h3>
+                <button onclick="closeShortcutsModal()" class="btn btn-icon btn-sm">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body" style="gap: 1rem;">
+                <div style="display:grid; grid-template-columns: 1fr auto; gap: 0.5rem; align-items:center;">
+                    <span>Add New Task</span> <kbd
+                        style="background:var(--bg-input); border:1px solid var(--border); padding:2px 6px; border-radius:4px; font-size:0.8rem;">Enter</kbd>
+                    <span>Pause Active Task</span> <kbd
+                        style="background:var(--bg-input); border:1px solid var(--border); padding:2px 6px; border-radius:4px; font-size:0.8rem;">Space</kbd>
+                    <span>Show Shortcuts</span> <kbd
+                        style="background:var(--bg-input); border:1px solid var(--border); padding:2px 6px; border-radius:4px; font-size:0.8rem;">?</kbd>
+                    <span>Close Modals/Menus</span> <kbd
+                        style="background:var(--bg-input); border:1px solid var(--border); padding:2px 6px; border-radius:4px; font-size:0.8rem;">Esc</kbd>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button id="helpBtn" class="btn btn-icon" title="Shortcuts (?)"
+        style="position:fixed; bottom:20px; right:20px; background:var(--bg-panel); border:1px solid var(--border); box-shadow:0 4px 12px rgba(0,0,0,0.1); border-radius:50%; width:40px; height:40px; justify-content:center;">
+        <span style="font-weight:bold; font-size:1.2rem;">?</span>
+    </button>
 
     <script src="script.js"></script>
 </body>

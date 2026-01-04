@@ -1,4 +1,27 @@
 /* CSS Variables */
+/* Local Fonts */
+@font-face {
+    font-family: 'Inter';
+    src: url('fonts/Inter-Regular.woff2') format('woff2');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'Inter';
+    src: url('fonts/Inter-Bold.woff2') format('woff2');
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'JetBrains Mono';
+    src: url('fonts/JetBrainsMono-Regular.woff2') format('woff2');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
 :root {
     --bg-app: #0f1115;
     --bg-panel: #181b21;
@@ -215,6 +238,65 @@ body.light-mode .bar {
     opacity: 0.9;
 }
 
+/* Zen Mode */
+body.zen-mode .history-panel,
+body.zen-mode .header-left span,
+body.zen-mode .header-left h1,
+body.zen-mode .header-center,
+body.zen-mode .todo-list,
+body.zen-mode #helpBtn {
+    display: none !important;
+}
+
+body.zen-mode .layout {
+    grid-template-columns: 1fr;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+body.zen-mode .main-panel {
+    border: none;
+    background: transparent;
+    box-shadow: none;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 60vh;
+}
+
+body.zen-mode .active-task-display {
+    transform: scale(1.1);
+    background: var(--bg-panel);
+    padding: 2rem;
+    border-radius: var(--radius-lg);
+    box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+    border: 1px solid var(--accent-primary-glow);
+}
+
+body.zen-mode #newTaskInput {
+    text-align: center;
+    font-size: 1.2rem;
+    padding: 1rem;
+}
+
+body.zen-mode #zenModeBtn {
+    color: var(--accent-primary);
+    background: var(--bg-input);
+}
+
+/* Light Mode Zen Override */
+body.light-mode.zen-mode .active-task-display {
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1);
+}
+
+body.light-mode.zen-mode #newTaskInput {
+    background: #ffffff;
+    border-color: #cbd5e1;
+    color: #1e293b;
+}
+
 /* Animations */
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
@@ -229,7 +311,7 @@ body.light-mode .bar {
 .modal { animation: scaleIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 .modal-overlay { animation: fadeIn 0.2s ease-out forwards; }
 
-.todo-item { animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+/* .todo-item animation handled in JS */
 .history-item { animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 
 /* Utilities */
@@ -274,6 +356,11 @@ body.light-mode .bar {
     justify-content: space-between;
     align-items: center;
     padding: 0.5rem 1rem;
+}
+.header-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
 }
 .logo { display: flex; align-items: center; gap: 0.75rem; font-weight: 700; font-size: 1.25rem; }
 
