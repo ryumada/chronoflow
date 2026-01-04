@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChronoFlow | Premium Time Tracker</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap"
+        rel="stylesheet">
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="logo">
+                <span class="logo-icon">⚡</span>
+                <h1>ChronoFlow</h1>
+            </div>
+            <div class="header-controls" style="display: flex; gap: 0.5rem; align-items: center;">
+                <button id="themeToggle" class="btn btn-icon" title="Toggle Light/Dark Mode"
+                    style="margin-right: 0.5rem;">
+                    <svg id="themeIconSun" class="hidden" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5" />
+                        <line x1="12" y1="1" x2="12" y2="3" />
+                        <line x1="12" y1="21" x2="12" y2="23" />
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64" />
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78" />
+                        <line x1="1" y1="12" x2="3" y2="12" />
+                        <line x1="21" y1="12" x2="23" y2="12" />
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36" />
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22" />
+                    </svg>
+                    <svg id="themeIconMoon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+                    </svg>
+                </button>
+                <input type="file" id="importInput" accept=".json" style="display: none;">
+                <button id="importBtn" class="btn btn-outline" title="Import Data from JSON">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="17 8 12 3 7 8"></polyline>
+                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                    </svg>
+                    Import
+                </button>
+                <button id="exportBtn" class="btn btn-outline" title="Export Data to JSON">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    Export
+                </button>
+            </div>
+        </header>
+
+        <!-- Global Timer (Hero) -->
+        <section class="timer-docket">
+            <div class="active-task-display">
+                <p class="label">CURRENTLY WORKING ON</p>
+                <h2 id="activeTaskTitle">No Task Active</h2>
+            </div>
+            <div class="timer-display">
+                <span id="globalTimer">00:00:00</span>
+            </div>
+            <div class="timer-controls">
+                <!-- Only visible when a task is running/paused -->
+                <div id="activeControls" class="hidden">
+                    <button id="globalPauseBtn" class="btn btn-warning btn-lg">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <rect x="6" y="4" width="4" height="16"></rect>
+                            <rect x="14" y="4" width="4" height="16"></rect>
+                        </svg>
+                        Pause
+                    </button>
+                    <button id="globalResumeBtn" class="btn btn-primary btn-lg hidden">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                        </svg>
+                        Resume
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Main Content Grid -->
+        <main class="main-grid">
+
+            <!-- Todo Column -->
+            <section class="panel todo-panel">
+                <div class="panel-header">
+                    <h3>Tasks</h3>
+                    <span class="badge" id="taskCount">0</span>
+                </div>
+
+                <div class="todo-input-wrapper">
+                    <input type="text" id="newTaskInput" placeholder="What are you working on? (Press Enter)"
+                        autocomplete="off">
+                    <button id="addTaskBtn" class="btn btn-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="todo-list" id="todoList">
+                    <!-- Tasks injected here -->
+                    <div class="empty-state">
+                        <p>No active tasks. Add one to start tracking!</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- History/Dashboard Column -->
+            <section class="panel history-panel">
+                <div class="panel-header history-header-layout">
+                    <div class="history-title-row">
+                        <h3>History</h3>
+                        <div class="history-controls">
+                            <button id="prevPeriodBtn" class="btn btn-icon btn-sm" title="Previous">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="m15 18-6-6 6-6" />
+                                </svg>
+                            </button>
+                            <button id="todayBtn" class="btn btn-outline btn-xs">Now</button>
+                            <span id="historyRangeLabel">Today</span>
+                            <button id="nextPeriodBtn" class="btn btn-icon btn-sm" title="Next">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="m9 18 6-6-6-6" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="tabs history-tabs-container">
+                        <button class="tab-btn active" data-view="day">Day</button>
+                        <button class="tab-btn" data-view="week">Week</button>
+                        <button class="tab-btn" data-view="month">Month</button>
+                        <button class="tab-btn" data-view="year">Year</button>
+                    </div>
+                </div>
+
+                <div class="stats-summary" id="statsSummary">
+                    <div class="stat-card">
+                        <span class="stat-label">Total Time</span>
+                        <span class="stat-value" id="totalTimeStat">0h 0m</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-label">Tasks Completed</span>
+                        <span class="stat-value" id="completedCountStat">0</span>
+                    </div>
+                </div>
+
+                <div class="history-list" id="historyList">
+                    <!-- History items injected here -->
+                </div>
+
+                <div class="panel-footer">
+                    <button id="cleanupBtn" class="btn btn-text btn-sm text-danger">Clean up Data</button>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- Journal Modal -->
+    <div id="journalModal" class="modal-overlay hidden">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="journalModalTitle">Task Journal</h3>
+                <button id="closeJournalBtn" class="btn btn-icon btn-text">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="journal-controls">
+                    <button id="copyJournalBtn" class="btn btn-outline btn-sm">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                        </svg>
+                        Copy All
+                    </button>
+                </div>
+                <div id="journalList" class="journal-list">
+                    <!-- Entries go here -->
+                </div>
+                <div class="journal-form">
+                    <h4>Add Entry</h4>
+                    <input type="text" id="journalTitleInput" placeholder="Entry Title (optional)" class="input-sm">
+                    <textarea id="journalContentInput" placeholder="What happened?" rows="3"
+                        class="input-sm"></textarea>
+                    <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                        <button id="addJournalAndCloseBtn" class="btn btn-outline btn-sm" style="flex: 1;">Add &
+                            Close</button>
+                        <button id="addJournalBtn" class="btn btn-primary btn-sm" style="flex: 1;">Add Entry</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirm Delete Modal -->
+    <div id="confirmModal" class="modal-overlay hidden">
+        <div class="modal" style="max-width: 400px; height: auto;">
+            <div class="modal-header">
+                <h3>Confirm Deletion</h3>
+            </div>
+            <div class="modal-body">
+                <p>This task has journal entries associated with it.</p>
+                <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 0.5rem;">Are you sure you want to
+                    permanently delete this task and all its data?</p>
+                <div style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1.5rem;">
+                    <button id="cancelDeleteBtn" class="btn btn-outline">Cancel</button>
+                    <button id="confirmDeleteBtn" class="btn btn-primary"
+                        style="background: var(--accent-warning); border-color: var(--accent-warning);">Delete
+                        Permanently</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Error Modal -->
+    <div id="errorModal" class="modal-overlay hidden">
+        <div class="modal" style="max-width: 400px; height: auto; border-top: 4px solid var(--accent-warning);">
+            <div class="modal-header">
+                <h3>Action Required</h3>
+            </div>
+            <div class="modal-body">
+                <p id="errorMessage">This task hasn't been started. You should start tracking time before completing it.
+                </p>
+                <div style="display: flex; justify-content: flex-end; margin-top: 1.5rem;">
+                    <button onclick="closeErrorModal()" class="btn btn-primary">Got it</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cleanup Modal -->
+    <div id="cleanupModal" class="modal-overlay hidden">
+        <div class="modal" style="max-width: 400px; height: auto;">
+            <div class="modal-header">
+                <h3>Cleanup History</h3>
+                <button onclick="closeCleanupModal()" class="btn btn-icon btn-sm">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body" style="gap: 0.75rem;">
+                <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0.5rem;">Select an option to
+                    clear your recorded history:</p>
+
+                <button onclick="performCleanup('30')" class="btn btn-outline btn-full"
+                    style="justify-content: flex-start; padding: 0.75rem 1rem;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    </svg>
+                    Older than 30 days
+                </button>
+
+                <button onclick="performCleanup('60')" class="btn btn-outline btn-full"
+                    style="justify-content: flex-start; padding: 0.75rem 1rem;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    </svg>
+                    Older than 60 days
+                </button>
+
+                <button onclick="performCleanup('all')" class="btn btn-danger btn-full"
+                    style="justify-content: flex-start; padding: 0.75rem 1rem;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="1.5">
+                        <path
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                            stroke="white" fill="none"></path>
+                    </svg>
+                    Delete All History
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
