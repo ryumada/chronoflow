@@ -14,7 +14,8 @@ A modern, offline-first time tracking application designed for focus and product
 -   **📓 Integrated Journaling**: Add notes and context to every task. Supports clean formatting and one-click copying.
 -   **📅 Comprehensive History**: View your productivity by Day, Week, Month, or Year. with visual charts.
 -   **🌗 Dark & Light Themes**: A stunning UI that adapts to your environment.
--   **🔊 Auditory Feedback**: Distinct sounds for start, stop, complete, warnings, and errors.
+-   **🔊 Auditory Feedback**: Distinct sounds for actions, warnings, and errors. Includes a satisfying "tactile" click for UI interactions.
+-   **🎚️ Master Volume**: Adjustable global volume controls with persistent settings.
 -   **🔒 Privacy First**: All data is stored locally in your browser. Offline-capable with local font hosting.
 -   **🧹 Cleanup Tools**: Manage your data with granular deletion options.
 
@@ -26,7 +27,8 @@ A modern, offline-first time tracking application designed for focus and product
 4.  **Complete**: Click the **Stop** (square/check) button to archive the task to History.
 5.  **Review**: Switch tabs in the History panel to see your progress over time.
 6.  **Zen Mode**: Click the **Eye** icon in the header to focus.
-7.  **Shortcuts**: Press `Shift + ?` to view keyboard shortcuts.
+7.  **Settings**: Click the **Gear** icon to adjust Master Volume.
+8.  **Shortcuts**: Press `Shift + ?` to view keyboard shortcuts.
 
 > **Fun Fact**: Try clicking the **ChronoFlow** logo in the top-left corner! 🦔
 

@@ -158,6 +158,12 @@ class SoundManager {
         this.playTone(1046.50, 'triangle', 0.8, 0.3, 0.2);// C6
     }
 
+    playClick() {
+        if (this.ctx.state === 'suspended') this.ctx.resume();
+        // Very short, high "tick" for general feedback
+        this.playTone(600, 'sine', 0.05, 0, 0.05);
+    }
+
     playCleanup() {
         if (this.ctx.state === 'suspended') this.ctx.resume();
         this.playTone(150, 'square', 0.4, 0, 0.1); // Square is very distinct
@@ -1146,6 +1152,29 @@ function handleJournalSubmit(shouldClose) {
 document.getElementById('copyJournalBtn').addEventListener('click', copyJournalToClipboard);
 document.getElementById('journalModal').addEventListener('click', (e) => {
     if (e.target.id === 'journalModal') closeJournalModal();
+});
+
+// Global Click Sound
+document.addEventListener('click', (e) => {
+    // Ignore keyboard-triggered clicks (Enter/Space on focused buttons)
+    // browsers set detail=0 for key clicks, >0 for mouse clicks
+    if (e.detail === 0) return;
+
+    const btn = e.target.closest('button');
+    if (!btn) return;
+
+    // Exclude buttons that already have specific sounds or logic handling sounds
+    if (btn.classList.contains('btn-action-play')) return;
+    if (btn.classList.contains('btn-action-pause')) return;
+    if (btn.classList.contains('btn-action-stop')) return; // Handles Complete/Stop
+    if (btn.classList.contains('btn-action-delete')) return; // Handles Warning
+    if (btn.id === 'confirmDeleteBtn') return; // Handles Cleanup
+    if (btn.id === 'cleanupBtn') return; // User requested exclusion
+    if (btn.hasAttribute('onclick') && btn.getAttribute('onclick').includes('performCleanup')) return; // Cleanup modal actions
+    if (btn.classList.contains('logo')) return; // handled by SEGA listener (though logo is div usually, checking logic)
+
+    // Play generic click for everything else (Tabs, Settings, Zen, Theme, Close, etc.)
+    sounds.playClick();
 });
 
 // Delete Confirm Events
