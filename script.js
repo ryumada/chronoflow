@@ -8,6 +8,7 @@ let timerInterval = null;
 let currentJournalTaskId = null;
 let currentViewDate = new Date(); // Anchor for history view
 let pendingDeleteId = null;
+let sprintStartDay = 0; // 0=Sunday, default
 
 // DOM Elements
 const newTaskInput = document.getElementById('newTaskInput');
@@ -44,8 +45,11 @@ function init() {
 function loadData() {
     const sTasks = localStorage.getItem('chrono_tasks');
     const sHistory = localStorage.getItem('chrono_history');
+    const sSprintStart = localStorage.getItem('chrono_sprint_start_day');
+
     if (sTasks) tasks = JSON.parse(sTasks);
     if (sHistory) history = JSON.parse(sHistory);
+    if (sSprintStart) sprintStartDay = parseInt(sSprintStart);
 
     // Check if any task was left running?
     // In a real app we might handle auto-resume or auto-pause.
@@ -776,13 +780,16 @@ function startGlobalTicker() {
 function getStartOfWeek(date) {
     const d = new Date(date);
     const day = d.getDay();
-    const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Adjust when day is sunday
-    // actually, let's just make Sunday start of week or Monday?
-    // standard user request: "Sunday 4th... show 4th to 10th".
-    // This implies Week starts on the "Current Day" if it's the start, or traditional week?
-    // "Week of 1/4/2026" usually means Sunday-Saturday or Monday-Sunday.
-    // Let's stick to Sunday start for simplicity if local locale defaults to it.
-    const start = new Date(d.setDate(d.getDate() - d.getDay()));
+    // Calculate difference based on configured start day (0-6)
+    const targetDay = sprintStartDay;
+
+    // Logic:
+    // If current day is 3 (Wed) and target is 1 (Mon), diff is 2.
+    // If current day is 0 (Sun) and target is 1 (Mon), diff should be 6 (previous Mon).
+    let diff = day - targetDay;
+    if (diff < 0) diff += 7;
+
+    const start = new Date(d.setDate(d.getDate() - diff));
     start.setHours(0, 0, 0, 0);
     return start;
 }
@@ -793,6 +800,32 @@ function getEndOfWeek(date) {
     end.setDate(end.getDate() + 6);
     end.setHours(23, 59, 59, 999);
     return end;
+}
+
+function getDateRange(view, referenceDate) {
+    let start, end, label;
+    const d = new Date(referenceDate);
+
+    if (view === 'day') {
+        start = new Date(d.setHours(0, 0, 0, 0));
+        end = new Date(d.setHours(23, 59, 59, 999));
+        label = start.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    } else if (view === 'week') {
+        start = getStartOfWeek(d);
+        end = getEndOfWeek(d);
+        const sStr = start.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+        const eStr = end.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+        label = `${sStr} - ${eStr}`;
+    } else if (view === 'month') {
+        start = new Date(d.getFullYear(), d.getMonth(), 1);
+        end = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59);
+        label = start.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+    } else if (view === 'year') {
+        start = new Date(d.getFullYear(), 0, 1);
+        end = new Date(d.getFullYear(), 11, 31, 23, 59, 59);
+        label = d.getFullYear().toString();
+    }
+    return { start, end, label };
 }
 
 function changePeriod(offset) {
@@ -815,29 +848,7 @@ function renderHistory(view) {
     document.querySelector(`[data-view="${view}"]`).classList.add('active');
 
     // Calculate Range
-    let start, end, label;
-    const d = new Date(currentViewDate);
-
-    if (view === 'day') {
-        start = new Date(d.setHours(0, 0, 0, 0));
-        end = new Date(d.setHours(23, 59, 59, 999));
-        label = start.toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-    } else if (view === 'week') {
-        start = getStartOfWeek(d);
-        end = getEndOfWeek(d);
-        // Format: "Jan 4 - Jan 10, 2026"
-        const sStr = start.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-        const eStr = end.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
-        label = `${sStr} - ${eStr}`;
-    } else if (view === 'month') {
-        start = new Date(d.getFullYear(), d.getMonth(), 1);
-        end = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59);
-        label = start.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
-    } else if (view === 'year') {
-        start = new Date(d.getFullYear(), 0, 1);
-        end = new Date(d.getFullYear(), 11, 31, 23, 59, 59);
-        label = d.getFullYear().toString();
-    }
+    const { start, end, label } = getDateRange(view, currentViewDate);
 
     document.getElementById('historyRangeLabel').textContent = label;
 
@@ -893,7 +904,7 @@ function renderHistory(view) {
     }
 
     renderAnalytics(view, filtered, start, end);
-    renderStats();
+    renderStats(filtered);
 }
 
 function renderAnalytics(view, data, start, end) {
@@ -922,7 +933,7 @@ function renderAnalytics(view, data, start, end) {
     };
 
     // Month abbreviations for Year view
-    const monthNames = ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"];
+    const monthNames = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
 
     while (current <= endDt) {
         const k = getKey(current);
@@ -990,10 +1001,16 @@ function renderAnalytics(view, data, start, end) {
     container.insertBefore(header, container.firstChild);
 }
 
-function renderStats() {
-    let totalMs = history.reduce((acc, t) => acc + getTaskDuration(t), 0);
+function renderStats(data) {
+    // If no data passed, default to all history (or empty if preferred, but usually stats reflect invalid view?)
+    // Actually, user wants stats to respect selected date range.
+    // If renderStats is called without args (e.g. init?), we might want empty or all.
+    // But renderHistory calls it with filtered.
+    const source = data || history;
+
+    let totalMs = source.reduce((acc, t) => acc + getTaskDuration(t), 0);
     totalTimeStat.textContent = formatTime(totalMs);
-    completedCountStat.textContent = history.length;
+    completedCountStat.textContent = source.length;
 }
 
 // Event Listeners
@@ -1205,31 +1222,33 @@ shortcutsModal.addEventListener('click', (e) => {
 
 // Report Generation Logic
 document.getElementById('exportReportBtn').addEventListener('click', generateReport);
+document.getElementById('copyReportBtn').addEventListener('click', copyReportToClipboard);
 
-function generateReport() {
+function createReportString() {
     const activeTab = document.querySelector('.tab-btn.active');
     const view = activeTab ? activeTab.dataset.view : 'week'; // Default to week report
 
-    // We need to filter based on current view variables.
-    // Since scopes are local, we'll re-calculate the report range based on currentViewDate.
-    // This duplicates logic slightly but is safer than exposing globals.
-    // Or we can just dump "All History within View".
+    // Calculate Range using currentViewDate (global)
+    const { start, end, label } = getDateRange(view, currentViewDate);
 
-    // Let's create a report for the currently VIEWED items.
-    // Since we don't store filtered list globally, let's re-filter quickly.
+    let report = `# ChronoFlow Report\nRange: ${label}\nGenerated: ${new Date().toLocaleString()}\n\n`;
 
-    // Re-use logic or just grab everything?
-    // Let's grab everything for simplicity or re-run filter?
-    // Actually, report usually implies "What I see".
-    // Let's assume Week Report for now as it's most useful.
+    // Filter History Logic (Same as renderHistory)
+    const filtered = history.filter(task => {
+        const lastLog = task.timeLog[task.timeLog.length - 1];
+        if (!lastLog) return false;
+        const taskDate = new Date(lastLog.end || lastLog.start);
+        return taskDate >= start && taskDate <= end;
+    });
 
-    let report = `# ChronoFlow Report\nGenerated: ${new Date().toLocaleString()}\n\n`;
+    if (filtered.length === 0) {
+        return report + "No tasks found for this period.";
+    }
 
     // Group history by Date
     const groups = {};
-    history.forEach(task => {
+    filtered.forEach(task => {
         const lastLog = task.timeLog[task.timeLog.length - 1];
-        if (!lastLog) return;
         const dateKey = new Date(lastLog.end || lastLog.start).toDateString();
         if (!groups[dateKey]) groups[dateKey] = [];
         groups[dateKey].push(task);
@@ -1256,6 +1275,11 @@ function generateReport() {
         report += `\n**Daily Total**: ${formatTime(dayTotal)}\n\n---\n\n`;
     });
 
+    return report;
+}
+
+function generateReport() {
+    const report = createReportString();
     const blob = new Blob([report], { type: 'text/markdown' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -1265,6 +1289,23 @@ function generateReport() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+}
+
+
+function copyReportToClipboard() {
+    const report = createReportString();
+    navigator.clipboard.writeText(report).then(() => {
+        const btn = document.getElementById('copyReportBtn');
+        const originalHtml = btn.innerHTML;
+        // Show Checkmark
+        btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+        setTimeout(() => {
+            btn.innerHTML = originalHtml;
+        }, 2000);
+    }).catch(err => {
+        console.error('Failed to copy report: ', err);
+        alert('Failed to copy report to clipboard');
+    });
 }
 
 // Settings Modal Logic
@@ -1280,6 +1321,11 @@ function openSettings() {
     const currentVolPercent = Math.round(sounds.masterVolume * 100);
     volumeSlider.value = currentVolPercent;
     volumeValue.textContent = `${currentVolPercent}%`;
+
+    // Set Sprint Select
+    if (sprintStartSelect) {
+        sprintStartSelect.value = sprintStartDay;
+    }
 }
 
 function closeSettings() {
@@ -1295,6 +1341,20 @@ if (volumeSlider) {
         const val = parseInt(e.target.value);
         volumeValue.textContent = `${val}%`;
         sounds.setVolume(val / 100);
+    });
+}
+
+const sprintStartSelect = document.getElementById('sprintStartSelect');
+if (sprintStartSelect) {
+    sprintStartSelect.addEventListener('change', (e) => {
+        sprintStartDay = parseInt(e.target.value);
+        localStorage.setItem('chrono_sprint_start_day', sprintStartDay);
+
+        // Re-render history if in Week view to reflect change
+        const activeTab = document.querySelector('.tab-btn.active');
+        if (activeTab && activeTab.dataset.view === 'week') {
+            renderHistory('week');
+        }
     });
 }
 

@@ -496,7 +496,7 @@ input[type="range"]::-webkit-slider-runnable-track {
     background: transparent; border: none; color: var(--text-secondary);
     padding: 0.25rem 0.75rem; border-radius: var(--radius-sm); font-size: 0.85rem; cursor: pointer;
 }
-.tab-btn.active { background: var(--bg-panel); color: var(--text-primary); shadow: 0 2px 4px rgba(0,0,0,0.2); }
+.tab-btn.active { background: var(--bg-panel); color: var(--text-primary); box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
 
 .stats-summary {
     display: grid;

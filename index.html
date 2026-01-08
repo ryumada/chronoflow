@@ -133,6 +133,13 @@
                             </button>
                             <button id="todayBtn" class="btn btn-outline btn-xs">Now</button>
                             <span id="historyRangeLabel">Today</span>
+                            <button id="copyReportBtn" class="btn btn-icon btn-sm" title="Copy Report">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                </svg>
+                            </button>
                             <button id="exportReportBtn" class="btn btn-icon btn-sm" title="Export Report">
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                     stroke-width="2">
@@ -154,7 +161,7 @@
 
                     <div class="tabs history-tabs-container">
                         <button class="tab-btn active" data-view="day">Day</button>
-                        <button class="tab-btn" data-view="week">Week</button>
+                        <button class="tab-btn" data-view="week">Week/Sprint</button>
                         <button class="tab-btn" data-view="month">Month</button>
                         <button class="tab-btn" data-view="year">Year</button>
                     </div>
@@ -359,6 +366,20 @@
                         <span id="volumeValue">50%</span>
                     </div>
                     <input type="range" id="volumeSlider" min="0" max="100" value="50">
+                </div>
+                <div class="setting-item" style="margin-top: 1rem;">
+                    <div class="setting-label">
+                        <label for="sprintStartSelect">Sprint Start Day</label>
+                    </div>
+                    <select id="sprintStartSelect" class="input-sm" style="width: 100%;">
+                        <option value="0">Sunday</option>
+                        <option value="1">Monday</option>
+                        <option value="2">Tuesday</option>
+                        <option value="3">Wednesday</option>
+                        <option value="4">Thursday</option>
+                        <option value="5">Friday</option>
+                        <option value="6">Saturday</option>
+                    </select>
                 </div>
                 <div style="display: flex; justify-content: flex-end; margin-top: 1.5rem;">
                     <button id="closeSettingsBtn" class="btn btn-outline">Close</button>
