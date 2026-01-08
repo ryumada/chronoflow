@@ -628,20 +628,13 @@ function renderTasks(newTaskId = null) {
             el.classList.remove('animate-slide-up');
         });
 
-
-        // Remove helper arg since we just animate everything on render
-        // Animate only if it's the new task - wait, user wants PAGE LOAD animation too.
-        // renderTasks is called on Load and Add/Delete.
-        // So global animation class is fine here.
-
-
         // Determine state
         const isRunning = task.id === activeTaskId && task.timeLog.some(l => l.end === null);
         if (isRunning) el.classList.add('active-running');
         else if (task.id === activeTaskId) el.classList.add('active-paused');
 
         el.innerHTML = `
-            <div class="todo-title">${task.title}</div>
+            <div class="todo-title" data-task-id="${task.id}">${task.title}</div>
             <div class="todo-duration" data-task-id="${task.id}" style="font-family:monospace; color:var(--text-secondary); margin-right:10px;">
                 ${formatTime(getTaskDuration(task))}
             </div>
@@ -656,9 +649,28 @@ function renderTasks(newTaskId = null) {
                 <button onclick="stopTask('${task.id}')" class="btn btn-icon btn-action-stop" title="Complete & Archive">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
                 </button>
-                <button onclick="deleteTask('${task.id}')" class="btn btn-icon btn-action-delete" title="Delete">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                </button>
+
+                <!-- Menu Button -->
+                 <div class="task-menu-container">
+                    <button onclick="toggleTaskMenu(event, '${task.id}')" class="btn btn-icon btn-action-menu" title="More Options">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="1"></circle>
+                            <circle cx="12" cy="5" r="1"></circle>
+                            <circle cx="12" cy="19" r="1"></circle>
+                        </svg>
+                    </button>
+                    <!-- Dropdown -->
+                    <div id="menu-${task.id}" class="task-menu-dropdown">
+                        <button onclick="editTaskTitle('${task.id}')" class="task-menu-item">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                            Edit Name
+                        </button>
+                        <button onclick="deleteTask('${task.id}')" class="task-menu-item danger">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                            Delete
+                        </button>
+                    </div>
+                </div>
             </div>
         `;
         todoList.appendChild(el);
@@ -670,6 +682,8 @@ function renderTasks(newTaskId = null) {
     window.stopTask = stopTask;
     window.deleteTask = deleteTask;
     window.openJournalModal = openJournalModal;
+    window.toggleTaskMenu = toggleTaskMenu;
+    window.editTaskTitle = editTaskTitle;
 }
 
 function updateTaskDOM(taskId) {
@@ -1401,3 +1415,102 @@ window.addEventListener('keydown', (e) => {
 
 // Run
 init();
+
+// Menu Logic
+function toggleTaskMenu(event, taskId) {
+    event.stopPropagation();
+
+    // Close other menus first
+    document.querySelectorAll('.task-menu-dropdown.show').forEach(el => {
+        if (el.id !== `menu-${taskId}`) {
+            el.classList.remove('show');
+        }
+    });
+
+    const menu = document.getElementById(`menu-${taskId}`);
+    if (menu) {
+        menu.classList.toggle('show');
+    }
+}
+
+// Close menus when clicking outside
+document.addEventListener('click', (event) => {
+    if (!event.target.closest('.task-menu-container')) {
+        document.querySelectorAll('.task-menu-dropdown.show').forEach(el => {
+            el.classList.remove('show');
+        });
+    }
+});
+
+// Edit Logic
+function editTaskTitle(taskId) {
+    // 1. Close Menu
+    const menu = document.getElementById(`menu-${taskId}`);
+    if (menu) menu.classList.remove('show');
+
+    // 2. Find Title Element
+    const titleEl = document.querySelector(`.todo-title[data-task-id="${taskId}"]`);
+    if (!titleEl) return;
+
+    // 3. Swap with Textarea
+    // Use innerText to preserve line breaks if any, though currently titles are likely single line.
+    // If we were using HTML in titles (not safe), we'd use innerHTML.
+    const currentTitle = titleEl.innerText;
+
+    // We render a textarea with onkeydown handler for Ctrl+Enter save
+    // We add onblur to save as well
+    // We need to escape currentTitle for the value attribute if rendering string literals,
+    // but setting value prop via JS is safer. Let's do DOM manipulation.
+
+    titleEl.innerHTML = ''; // Clear
+
+    const textarea = document.createElement('textarea');
+    textarea.className = 'task-title-input';
+    textarea.value = currentTitle;
+    textarea.onblur = () => saveTaskTitle(taskId, textarea.value);
+    textarea.onkeydown = (e) => {
+        if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+            textarea.blur(); // Triggers save
+        }
+    };
+
+    titleEl.appendChild(textarea);
+
+    // 4. Focus
+    textarea.focus();
+    // Move cursor to end
+    textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+}
+
+function saveTaskTitle(taskId, newTitle) {
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) return;
+
+    const trimmed = newTitle.trim();
+    if (!trimmed) {
+        // Revert if empty (or maybe delete? No, revert is safer)
+        const titleEl = document.querySelector(`.todo-title[data-task-id="${taskId}"]`);
+        if (titleEl) titleEl.textContent = task.title; // Re-render text
+        return;
+    }
+
+    // Update Data
+    task.title = trimmed;
+    saveData(true); // Save but skip full re-render
+
+    // Update DOM
+    const titleEl = document.querySelector(`.todo-title[data-task-id="${taskId}"]`);
+    if (titleEl) {
+        // Use innerText to respect newlines when rendering as text
+        titleEl.innerText = trimmed;
+        // Note: CSS 'white-space: pre-wrap' on .todo-title might be needed if not already present.
+        // Let's check style.css or add it inline if needed, but usually div doesn't wrap.
+        // We'll set style locally just in case.
+        titleEl.style.whiteSpace = 'pre-wrap';
+    }
+
+    // Update Global UI if Active
+    if (activeTaskId === taskId) {
+        updateGlobalUI(task, 'running');
+    }
+}

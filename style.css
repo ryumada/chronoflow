@@ -481,7 +481,14 @@ input[type="range"]::-webkit-slider-runnable-track {
 .todo-item.active-running { border-color: var(--accent-primary); background: rgba(59, 130, 246, 0.05); }
 .todo-item.active-paused { border-color: var(--accent-warning); background: rgba(245, 158, 11, 0.05); }
 
-.todo-title { flex: 1; font-weight: 500; }
+.todo-title {
+    flex: 1;
+    font-weight: 500;
+    white-space: pre-wrap; /* Respect newlines */
+    word-break: break-word; /* Wrap long words */
+    min-width: 0; /* Enable flex shrinkage */
+    overflow-wrap: break-word; /* Modern equivalent */
+}
 .todo-actions { display: flex; gap: 0.5rem; }
 .btn-action-play { color: var(--accent-success); }
 .btn-action-pause { color: var(--accent-warning); }
@@ -576,7 +583,15 @@ input[type="range"]::-webkit-slider-runnable-track {
     border-bottom: 1px solid rgba(255,255,255,0.05);
 }
 .history-item:last-child { border-bottom: none; }
-.history-title { font-weight: 500; }
+.history-title {
+    font-weight: 500;
+    flex: 1;
+    white-space: pre-wrap;
+    word-break: break-word; /* Wrap long words */
+    min-width: 0;
+    overflow-wrap: break-word;
+    margin-right: 1rem; /* Add spacing between title and time */
+}
 .history-duration { font-family: var(--font-mono); color: var(--text-secondary); }
 
 /* Scrollbar */
@@ -715,4 +730,81 @@ input[type="range"]:focus {
 }
 input[type="range"]:focus::-webkit-slider-thumb {
     box-shadow: 0 0 0 6px rgba(59, 130, 246, 0.4);
+}
+
+/* Task Menu & Editing Styles */
+.task-menu-container {
+    position: relative;
+    display: inline-block;
+}
+
+.task-menu-dropdown {
+    position: absolute;
+    right: 0;
+    top: 100%;
+    width: 150px;
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    z-index: 50;
+    overflow: hidden;
+    margin-top: 4px;
+    display: none; /* Hidden by default */
+}
+
+.task-menu-dropdown.show {
+    display: block;
+    animation: fadeIn 0.1s ease-out;
+}
+
+.task-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background: transparent;
+    border: none;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.2s;
+}
+
+.task-menu-item:hover {
+    background: rgba(255,255,255,0.05);
+}
+
+.task-menu-item.danger {
+    color: var(--accent-danger);
+}
+.task-menu-item.danger:hover {
+    background: rgba(239, 68, 68, 0.1);
+}
+
+/* Light Mode Menu Overrides */
+body.light-mode .task-menu-dropdown {
+    background: #ffffff;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+body.light-mode .task-menu-item:hover {
+    background: #f1f5f9;
+}
+
+/* Edit Input */
+.task-title-input {
+    width: 100%;
+    min-height: 8em; /* Approx 5 lines */
+    background: var(--bg-input);
+    border: 1px solid var(--accent-primary);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: inherit;
+    padding: 0.5rem;
+    outline: none;
+    resize: vertical; /* Allow resizing if needed */
+    line-height: 1.5;
 }
