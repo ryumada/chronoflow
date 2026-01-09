@@ -269,7 +269,8 @@ function addTask(title) {
         id: crypto.randomUUID(),
         title: title,
         timeLog: [],
-        journal: []
+        journal: [],
+        createdAt: new Date().toISOString()
     };
     tasks.unshift(newTask); // Add to top
     saveData();
@@ -362,6 +363,9 @@ function stopTask(id) {
     if (activeLog) {
         activeLog.end = new Date().toISOString();
     }
+
+    // Set completion time
+    task.completedAt = new Date().toISOString();
 
     // 2. Move to history
     // Animate removal
@@ -634,11 +638,16 @@ function renderTasks(newTaskId = null) {
         else if (task.id === activeTaskId) el.classList.add('active-paused');
 
         el.innerHTML = `
-            <div class="todo-title" data-task-id="${task.id}">${task.title}</div>
-            <div class="todo-duration" data-task-id="${task.id}" style="font-family:monospace; color:var(--text-secondary); margin-right:10px;">
-                ${formatTime(getTaskDuration(task))}
+            <div style="flex:1;">
+                <div class="todo-title" data-task-id="${task.id}">${task.title}</div>
+                 <div class="todo-meta" style="margin-top:4px;">
+                    <span class="todo-duration" data-task-id="${task.id}" style="font-family:monospace; color:var(--text-secondary); margin-right:10px;">
+                        ${formatTime(getTaskDuration(task))}
+                    </span>
+                    ${task.createdAt ? `<span style="font-size:0.75rem; color:var(--text-muted); display:inline-block;">Created: ${formatDate(task.createdAt)}</span>` : ''}
+                </div>
             </div>
-            <div class="todo-actions">
+            <div class="todo-actions" style="align-self: flex-start; margin-top:2px;">
                 ${isRunning
                 ? `<button onclick="pauseTask('${task.id}')" class="btn btn-icon btn-action-pause" title="Pause"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg></button>`
                 : `<button onclick="playTask('${task.id}')" class="btn btn-icon btn-action-play" title="Play"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg></button>`
@@ -885,9 +894,12 @@ function renderHistory(view) {
         // User didn't specify grouping within range, but showing them as a list is fine.
         // Let's sort by date descending.
         filtered.sort((a, b) => {
-            const da = new Date(a.timeLog[a.timeLog.length - 1].end);
-            const db = new Date(b.timeLog[b.timeLog.length - 1].end);
-            return db - da;
+            const getEndTime = (task) => {
+                if (task.completedAt) return new Date(task.completedAt).getTime();
+                const lastLog = task.timeLog[task.timeLog.length - 1];
+                return lastLog ? new Date(lastLog.end || lastLog.start).getTime() : 0;
+            };
+            return getEndTime(b) - getEndTime(a);
         });
 
         filtered.forEach(task => {
@@ -896,7 +908,18 @@ function renderHistory(view) {
 
             // Format time for display
             const lastLog = task.timeLog[task.timeLog.length - 1];
-            const dateDisplay = formatDate(lastLog.end);
+
+            // Determine display strings
+            const createdStr = task.createdAt ? formatDate(task.createdAt) : '';
+            const completedDate = task.completedAt || (lastLog ? lastLog.end : null);
+            const completedStr = completedDate ? formatDate(completedDate) : 'Unknown';
+
+            let dateDisplay = '';
+            if (createdStr) {
+                dateDisplay = `Created: ${createdStr} <br> Completed: ${completedStr}`; // Newline separator
+            } else {
+                dateDisplay = `Completed: ${completedStr}`;
+            }
 
             item.innerHTML = `
                 <div style="flex:1;">
