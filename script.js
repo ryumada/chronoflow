@@ -69,7 +69,7 @@ function saveData(skipTasks = false) {
     localStorage.setItem('chrono_tasks', JSON.stringify(tasks));
     localStorage.setItem('chrono_history', JSON.stringify(history));
     if (!skipTasks) renderTasks(); // Re-render to show updates
-    renderStats();
+    renderHistory('day'); // Re-render History
 }
 
 // Theme Management
@@ -655,9 +655,6 @@ function renderTasks(newTaskId = null) {
                 <button onclick="openJournalModal('${task.id}')" class="btn btn-icon btn-action-journal" title="Journal">
                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
                 </button>
-                <button onclick="stopTask('${task.id}')" class="btn btn-icon btn-action-stop" title="Complete & Archive">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                </button>
 
                 <!-- Menu Button -->
                  <div class="task-menu-container">
@@ -670,12 +667,17 @@ function renderTasks(newTaskId = null) {
                     </button>
                     <!-- Dropdown -->
                     <div id="menu-${task.id}" class="task-menu-dropdown">
+                        <!-- Menu Items -->
                         <button onclick="editTaskTitle('${task.id}')" class="task-menu-item">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                             Edit Name
                         </button>
+                        <button onclick="stopTask('${task.id}')" class="task-menu-item">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                            Complete
+                        </button>
                         <button onclick="deleteTask('${task.id}')" class="task-menu-item danger">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                             Delete
                         </button>
                     </div>
