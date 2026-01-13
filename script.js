@@ -926,17 +926,35 @@ function renderHistory(view) {
             item.innerHTML = `
                 <div style="flex:1;">
                     <div class="history-title">${task.title}</div>
-                    <div style="font-size:0.75rem; color:var(--text-muted);">${dateDisplay}</div>
+                    <div style="margin-top:4px;">
+                        <span style="font-family:monospace; color:var(--text-secondary); margin-right:10px;">${formatTime(getTaskDuration(task))}</span>
+                        <span style="font-size:0.75rem; color:var(--text-muted); display:inline-block;">${dateDisplay}</span>
+                    </div>
                 </div>
                 <div style="display:flex; align-items:center; gap:0.5rem;">
                     <button onclick="openJournalModal('${task.id}')" class="btn btn-icon btn-action-journal" title="Journal">
                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
                     </button>
-                    <div class="history-duration">${formatTime(getTaskDuration(task))}</div>
-                     <button onclick="deleteTask('${task.id}')" class="btn btn-icon btn-action-delete" title="Delete" style="transform:scale(0.8)">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                    </button>
+                    <!-- Menu Button -->
+                    <div class="task-menu-container">
+                        <button onclick="toggleTaskMenu(event, '${task.id}')" class="btn btn-icon btn-action-menu" title="More Options">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="1"></circle>
+                                <circle cx="12" cy="5" r="1"></circle>
+                                <circle cx="12" cy="19" r="1"></circle>
+                            </svg>
+                        </button>
+                        <!-- Dropdown -->
+                        <div id="menu-${task.id}" class="task-menu-dropdown">
+                            <!-- Menu Items -->
+                            <button onclick="deleteTask('${task.id}')" class="task-menu-item danger">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                                Delete
+                            </button>
+                        </div>
+                    </div>
                 </div>
+
             `;
             historyList.appendChild(item);
         });
