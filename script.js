@@ -670,9 +670,9 @@ function renderTasks(newTaskId = null) {
                     <div id="menu-${task.id}" class="task-menu-dropdown">
                         <!-- Menu Items -->
                         <button onclick="openManualTimeModal('${task.id}')" class="task-menu-item">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <circle cx="12" cy="12" r="10"></circle>
-                                <polyline points="12 6 12 12 16 14"></polyline>
+                            <svg width="28" height="28" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="14" cy="14" r="12"></circle>
+                                <polyline points="14 8 14 14 18 16"></polyline>
                             </svg>
                             Add Manual Time
                         </button>
