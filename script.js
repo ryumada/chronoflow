@@ -8,6 +8,7 @@ let timerInterval = null;
 let currentJournalTaskId = null;
 let currentViewDate = new Date(); // Anchor for history view
 let pendingDeleteId = null;
+let currentManualTimeTaskId = null; // Track which task to add time to
 let sprintStartDay = 0; // 0=Sunday, default
 
 // DOM Elements
@@ -668,6 +669,13 @@ function renderTasks(newTaskId = null) {
                     <!-- Dropdown -->
                     <div id="menu-${task.id}" class="task-menu-dropdown">
                         <!-- Menu Items -->
+                        <button onclick="openManualTimeModal('${task.id}')" class="task-menu-item">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <polyline points="12 6 12 12 16 14"></polyline>
+                            </svg>
+                            Add Manual Time
+                        </button>
                         <button onclick="editTaskTitle('${task.id}')" class="task-menu-item">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                             Edit Name
@@ -693,6 +701,7 @@ function renderTasks(newTaskId = null) {
     window.stopTask = stopTask;
     window.deleteTask = deleteTask;
     window.openJournalModal = openJournalModal;
+    window.openManualTimeModal = openManualTimeModal;
     window.toggleTaskMenu = toggleTaskMenu;
     window.editTaskTitle = editTaskTitle;
 }
@@ -1260,6 +1269,87 @@ document.getElementById('confirmModal').addEventListener('click', (e) => {
     if (e.target.id === 'confirmModal') closeConfirmModal();
 });
 
+// Manual Time Logic
+function openManualTimeModal(taskId) {
+    currentManualTimeTaskId = taskId;
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) return;
+
+    // Close menu if open
+    const menu = document.getElementById(`menu-${taskId}`);
+    if (menu) menu.classList.remove('show');
+
+    document.getElementById('manualTimeModalTitle').textContent = `Add Time to: ${task.title}`;
+    document.getElementById('manualHoursInput').value = 0;
+    document.getElementById('manualMinutesInput').value = 0;
+    document.getElementById('manualTimeModal').classList.remove('hidden');
+    document.getElementById('manualHoursInput').focus();
+}
+
+function closeManualTimeModal() {
+    document.getElementById('manualTimeModal').classList.add('hidden');
+    currentManualTimeTaskId = null;
+}
+
+function addManualTime() {
+    if (!currentManualTimeTaskId) return;
+
+    const task = tasks.find(t => t.id === currentManualTimeTaskId);
+    if (!task) return;
+
+    const hours = parseInt(document.getElementById('manualHoursInput').value) || 0;
+    const minutes = parseInt(document.getElementById('manualMinutesInput').value) || 0;
+
+    if (hours === 0 && minutes === 0) {
+        alert("Please enter a valid duration.");
+        return;
+    }
+
+    if (hours < 0 || minutes < 0) {
+        alert("Duration cannot be negative.");
+        return;
+    }
+
+    const durationMs = (hours * 60 * 60 * 1000) + (minutes * 60 * 1000);
+
+    // Create a log entry
+    // We'll set the start time to "now - duration" and end time to "now"
+    // This way it appears as a completed block ending at the current moment.
+    const now = new Date();
+    const start = new Date(now.getTime() - durationMs);
+
+    task.timeLog.push({
+        id: crypto.randomUUID(),
+        start: start.toISOString(),
+        end: now.toISOString(),
+        manual: true // Flag to identify manual entries if needed later
+    });
+
+    saveData();
+    // Update DOM (Total time)
+    // If it's the active task, updateGlobalUI might be needed if we were showing total time there,
+    // but we only show run time of current session in title usually.
+    // However, the list item shows total duration.
+    const durationEl = document.querySelector(`.todo-duration[data-task-id="${currentManualTimeTaskId}"]`);
+    if (durationEl) {
+        durationEl.textContent = formatTime(getTaskDuration(task));
+    }
+
+    // Play Success Sound
+    sounds.playClick(); // or playComplete for a nice chime
+
+    closeManualTimeModal();
+}
+
+// Expose to window
+window.closeManualTimeModal = closeManualTimeModal;
+window.addManualTime = addManualTime;
+
+document.getElementById('manualTimeModal').addEventListener('click', (e) => {
+    if (e.target.id === 'manualTimeModal') closeManualTimeModal();
+});
+
+
 // Zen Mode Logic
 const zenModeBtn = document.getElementById('zenModeBtn');
 zenModeBtn.addEventListener('click', () => {
@@ -1437,6 +1527,7 @@ window.addEventListener('keydown', (e) => {
         closeCleanupModal();
         closeSettings();
         closeShortcutsModal();
+        closeManualTimeModal();
     }
 
     if (e.key === '?' && e.shiftKey) {

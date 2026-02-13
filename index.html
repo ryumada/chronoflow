@@ -394,6 +394,44 @@
         </div>
     </div>
 
+    <!-- Manual Time Modal -->
+    <div id="manualTimeModal" class="modal-overlay hidden">
+        <div class="modal" style="max-width: 400px; height: auto;">
+            <div class="modal-header">
+                <h3 id="manualTimeModalTitle">Add Manual Time</h3>
+                <button onclick="closeManualTimeModal()" class="btn btn-icon btn-sm">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p style="color:var(--text-secondary); font-size:0.9rem; margin-bottom:1rem;">Add time explicitly to
+                    this task. Useful for offline work.</p>
+                <div style="display:flex; gap:1rem; align-items:center; justify-content:center; margin-bottom:1.5rem;">
+                    <div style="text-align:center;">
+                        <label
+                            style="font-size:0.8rem; color:var(--text-muted); display:block; margin-bottom:0.25rem;">Hours</label>
+                        <input type="number" id="manualHoursInput" min="0" value="0" class="input-sm"
+                            style="width:60px; text-align:center; font-size:1.2rem;">
+                    </div>
+                    <span style="font-size:1.5rem; font-weight:bold; margin-top:1rem;">:</span>
+                    <div style="text-align:center;">
+                        <label
+                            style="font-size:0.8rem; color:var(--text-muted); display:block; margin-bottom:0.25rem;">Minutes</label>
+                        <input type="number" id="manualMinutesInput" min="0" max="59" value="0" class="input-sm"
+                            style="width:60px; text-align:center; font-size:1.2rem;">
+                    </div>
+                </div>
+                <div style="display: flex; justify-content: flex-end; gap: 1rem;">
+                    <button onclick="closeManualTimeModal()" class="btn btn-outline">Cancel</button>
+                    <button onclick="addManualTime()" class="btn btn-primary">Add Time</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="script.js"></script>
 </body>
 
