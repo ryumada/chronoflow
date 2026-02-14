@@ -180,7 +180,7 @@ body {
     color: var(--text-primary);
     font-family: var(--font-ui);
     height: 100vh;
-    overflow: hidden; /* App-like feel */
+    overflow: scroll;
     display: flex;
     justify-content: center;
 }
@@ -359,7 +359,7 @@ input[type="range"]::-webkit-slider-runnable-track {
 .app-container {
     width: 100%;
     max-width: 1200px;
-    height: 100%;
+    min-height: 500px;
     display: flex;
     flex-direction: column;
     padding: 1rem;
@@ -742,7 +742,7 @@ input[type="range"]:focus::-webkit-slider-thumb {
     position: absolute;
     right: 0;
     top: 100%;
-    width: 150px;
+    width: 12em;
     background: var(--bg-panel);
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
