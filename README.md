@@ -5,7 +5,7 @@ context: Project Root
 ---
 
 <div align="center">
-  <img src="favicon.png" alt="ChronoFlow Logo" width="64" height="64">
+  <img src="src/img/favicon.png" alt="ChronoFlow Logo" width="64" height="64">
   <h1>ChronoFlow | Premium Time Tracker</h1>
 </div>
 

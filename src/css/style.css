@@ -184,6 +184,7 @@ body {
     background-color: var(--bg-app);
     color: var(--text-primary);
     font-family: var(--font-ui);
+    min-height: 75em;
     height: 100vh;
     overflow: scroll;
     display: flex;
@@ -830,4 +831,12 @@ body.light-mode .task-menu-item:hover {
     outline: none;
     resize: vertical; /* Allow resizing if needed */
     line-height: 1.5;
+}
+
+.logo-icon {
+    width: 2.5rem;
+    height: 2.5rem;
+    margin-right: 0.5rem;
+    border-radius: 6px; /* Smooth rounded edges */
+    object-fit: cover;  /* Ensure the image fills the space correctly */
 }
