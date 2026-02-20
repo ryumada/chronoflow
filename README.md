@@ -11,6 +11,8 @@ context: Project Root
 
 A modern, offline-first time tracking application designed for focus and productivity. Built with vanilla HTML, CSS, and JavaScript for maximum performance and privacy.
 
+You can open the app by visiting this URL: [https://ryumada.github.io/chronoflow/](https://ryumada.github.io/chronoflow/).
+
 ![ChronoFlow Screenshot](screenshot.png)
 
 ## Features
@@ -40,8 +42,25 @@ A modern, offline-first time tracking application designed for focus and product
 
 ## Installation
 
-Simply open `index.html` in any modern web browser. No server or installation required.
+Because ChronoFlow uses modern ES6 modules, it must be served over `http://` or `https://` (opening the `index.html` file directly as `file://` will cause CORS errors).
 
+You can use the provided startup scripts to easily launch a local development server:
+
+**Using Python:**
+```bash
+cd scripts
+./start_http_server-python3.sh # Or python3 -m http.server 8098 from the root directory
+```
+
+**Using Node.js:**
+```bash
+cd scripts
+./start_http_server-npm.sh # Or npx http-server -p 8098 from the root directory
+```
+
+Then, open your browser and navigate to `http://localhost:8098`.
+
+*Note: ChronoFlow can be deployed natively to GitHub Pages or any standard static hosting provider with no build steps.*
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
