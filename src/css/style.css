@@ -184,7 +184,7 @@ body {
     background-color: var(--bg-app);
     color: var(--text-primary);
     font-family: var(--font-ui);
-    min-height: 75em;
+    min-height: 55em;
     height: 100vh;
     overflow: scroll;
     display: flex;
