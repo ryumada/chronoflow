@@ -535,6 +535,27 @@ function addJournal(taskId, title, content) {
     if (currentJournalTaskId === taskId) {
         renderJournalList(task);
     }
+    updateJournalBadges(taskId);
+}
+
+function updateJournalBadges(taskId) {
+    const task = tasks.find(t => t.id === taskId) || history.find(t => t.id === taskId);
+    if (!task) return;
+    const count = task.journal ? task.journal.length : 0;
+
+    document.querySelectorAll(`button[onclick="openJournalModal('${taskId}')"]`).forEach(btn => {
+        let badge = btn.querySelector('.journal-badge');
+        if (count > 0) {
+            if (!badge) {
+                badge = document.createElement('span');
+                badge.className = 'journal-badge';
+                btn.appendChild(badge);
+            }
+            badge.textContent = count;
+        } else {
+            if (badge) badge.remove();
+        }
+    });
 }
 
 function openJournalModal(taskId) {
@@ -653,8 +674,9 @@ function renderTasks(newTaskId = null) {
                 ? `<button onclick="pauseTask('${task.id}')" class="btn btn-icon btn-action-pause" title="Pause"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg></button>`
                 : `<button onclick="playTask('${task.id}')" class="btn btn-icon btn-action-play" title="Play"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg></button>`
             }
-                <button onclick="openJournalModal('${task.id}')" class="btn btn-icon btn-action-journal" title="Journal">
+                <button onclick="openJournalModal('${task.id}')" class="btn btn-icon btn-action-journal" title="Journal" style="position: relative;">
                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
+                   ${task.journal && task.journal.length > 0 ? `<span class="journal-badge">${task.journal.length}</span>` : ''}
                 </button>
 
                 <!-- Menu Button -->
@@ -941,8 +963,9 @@ function renderHistory(view) {
                     </div>
                 </div>
                 <div style="display:flex; align-items:center; gap:0.5rem;">
-                    <button onclick="openJournalModal('${task.id}')" class="btn btn-icon btn-action-journal" title="Journal">
+                    <button onclick="openJournalModal('${task.id}')" class="btn btn-icon btn-action-journal" title="Journal" style="position: relative;">
                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
+                       ${task.journal && task.journal.length > 0 ? `<span class="journal-badge">${task.journal.length}</span>` : ''}
                     </button>
                     <!-- Menu Button -->
                     <div class="task-menu-container">
