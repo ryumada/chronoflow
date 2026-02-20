@@ -1,3 +1,9 @@
+---
+title: ChronoFlow README
+description: Main documentation and feature overview for ChronoFlow
+context: Project Root
+---
+
 <div align="center">
   <img src="favicon.png" alt="ChronoFlow Logo" width="64" height="64">
   <h1>ChronoFlow | Premium Time Tracker</h1>
