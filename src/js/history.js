@@ -244,35 +244,48 @@ export function createReportString() {
     const { start, end, label } = getDateRange(view, state.currentViewDate);
     let report = `# ChronoFlow Report\nRange: ${label}\nGenerated: ${new Date().toLocaleString()}\n\n`;
 
-    const filtered = state.history.filter(task => {
-        const lastLog = task.timeLog[task.timeLog.length - 1];
-        if (!lastLog) return false;
-        const taskDate = new Date(lastLog.end || lastLog.start);
-        return taskDate >= start && taskDate <= end;
+    const groups = {};
+    let hasLog = false;
+
+    state.history.forEach(task => {
+        task.timeLog.forEach(log => {
+            if (!log.end) return;
+            const logStart = new Date(log.start);
+            if (logStart >= start && logStart <= end) {
+                hasLog = true;
+                const dateKey = logStart.toDateString();
+                const logDuration = new Date(log.end) - logStart;
+
+                if (!groups[dateKey]) groups[dateKey] = [];
+
+                const existing = groups[dateKey].find(t => t.id === task.id);
+                if (existing) {
+                    existing.duration += logDuration;
+                } else {
+                    groups[dateKey].push({
+                        id: task.id,
+                        title: task.title,
+                        duration: logDuration,
+                        journal: task.journal
+                    });
+                }
+            }
+        });
     });
 
-    if (filtered.length === 0) {
+    if (!hasLog) {
         return report + "No tasks found for this period.";
     }
-
-    const groups = {};
-    filtered.forEach(task => {
-        const lastLog = task.timeLog[task.timeLog.length - 1];
-        if (!lastLog) return;
-        const dateKey = new Date(lastLog.end || lastLog.start).toDateString();
-        if (!groups[dateKey]) groups[dateKey] = [];
-        groups[dateKey].push(task);
-    });
 
     Object.keys(groups).sort((a, b) => new Date(b) - new Date(a)).forEach(dateKey => {
         report += `## ${dateKey}\n\n`;
         let dayTotal = 0;
-        groups[dateKey].forEach(task => {
-            const duration = getTaskDuration(task);
-            dayTotal += duration;
-            report += `- **${task.title}**: ${formatTime(duration)}\n`;
-            if (task.journal && task.journal.length > 0) {
-                task.journal.forEach(entry => {
+        groups[dateKey].forEach(taskItem => {
+            dayTotal += taskItem.duration;
+            report += `- **${taskItem.title}**: ${formatTime(taskItem.duration)}\n`;
+            if (taskItem.journal && taskItem.journal.length > 0) {
+                const dayJournals = taskItem.journal.filter(entry => new Date(entry.createdAt).toDateString() === dateKey);
+                dayJournals.forEach(entry => {
                     report += `  - *${entry.title || 'Note'}*: ${entry.content}\n`;
                 });
             }
