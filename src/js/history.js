@@ -236,3 +236,79 @@ export function renderStats(data) {
     document.getElementById('totalTimeStat').textContent = formatTime(totalMs);
     document.getElementById('completedCountStat').textContent = source.length;
 }
+
+export function createReportString() {
+    const activeTab = document.querySelector('.tab-btn.active');
+    const view = activeTab ? activeTab.dataset.view : 'week';
+
+    const { start, end, label } = getDateRange(view, state.currentViewDate);
+    let report = `# ChronoFlow Report\nRange: ${label}\nGenerated: ${new Date().toLocaleString()}\n\n`;
+
+    const filtered = state.history.filter(task => {
+        const lastLog = task.timeLog[task.timeLog.length - 1];
+        if (!lastLog) return false;
+        const taskDate = new Date(lastLog.end || lastLog.start);
+        return taskDate >= start && taskDate <= end;
+    });
+
+    if (filtered.length === 0) {
+        return report + "No tasks found for this period.";
+    }
+
+    const groups = {};
+    filtered.forEach(task => {
+        const lastLog = task.timeLog[task.timeLog.length - 1];
+        if (!lastLog) return;
+        const dateKey = new Date(lastLog.end || lastLog.start).toDateString();
+        if (!groups[dateKey]) groups[dateKey] = [];
+        groups[dateKey].push(task);
+    });
+
+    Object.keys(groups).sort((a, b) => new Date(b) - new Date(a)).forEach(dateKey => {
+        report += `## ${dateKey}\n\n`;
+        let dayTotal = 0;
+        groups[dateKey].forEach(task => {
+            const duration = getTaskDuration(task);
+            dayTotal += duration;
+            report += `- **${task.title}**: ${formatTime(duration)}\n`;
+            if (task.journal && task.journal.length > 0) {
+                task.journal.forEach(entry => {
+                    report += `  - *${entry.title || 'Note'}*: ${entry.content}\n`;
+                });
+            }
+        });
+        report += `\n**Daily Total**: ${formatTime(dayTotal)}\n\n---\n\n`;
+    });
+
+    return report;
+}
+
+export function generateReport() {
+    const report = createReportString();
+    const blob = new Blob([report], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `ChronoFlow_Report_${new Date().toISOString().split('T')[0]}.md`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+export function copyReportToClipboard() {
+    const report = createReportString();
+    navigator.clipboard.writeText(report).then(() => {
+        const btn = document.getElementById('copyReportBtn');
+        if (!btn) return;
+        const originalHtml = btn.innerHTML;
+        // Show Checkmark
+        btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+        setTimeout(() => {
+            btn.innerHTML = originalHtml;
+        }, 2000);
+    }).catch(err => {
+        console.error('Failed to copy report: ', err);
+        alert('Failed to copy report to clipboard');
+    });
+}

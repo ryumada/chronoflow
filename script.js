@@ -8,7 +8,7 @@ import { state } from './src/js/state.js';
 import { loadData, saveData } from './src/js/persistence.js';
 import { loadTheme, toggleTheme } from './src/js/theme.js';
 import { renderTasks, startGlobalTicker, closeErrorModal, closeConfirmModal, closeManualTimeModal, addManualTime } from './src/js/ui.js';
-import { renderHistory, changePeriod } from './src/js/history.js';
+import { renderHistory, changePeriod, generateReport, copyReportToClipboard } from './src/js/history.js';
 import { addTask, playTask } from './src/js/tasks.js';
 import { sounds } from './src/js/audio.js';
 import { closeJournalModal, addJournal, copyJournalToClipboard } from './src/js/journal.js';
@@ -256,14 +256,11 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Report Generation Logic
-    function createReportString() {
-        const activeTab = document.querySelector('.tab-btn.active');
-        const view = activeTab ? activeTab.dataset.view : 'week';
-        const { start, end, label } = import('./src/js/history.js').then(m => m.getDateRange(view, state.currentViewDate));
-        // since import() is async, it breaks the synchronous createReportString.
-        // Wait, I can just import getDateRange at the top of file! I'll do this in a minute by fixing the code.
-        // Let's implement this properly: I'll use the imported getDateRange.
-    }
+    const exportReportBtn = document.getElementById('exportReportBtn');
+    const copyReportBtn = document.getElementById('copyReportBtn');
+
+    if (exportReportBtn) exportReportBtn.addEventListener('click', generateReport);
+    if (copyReportBtn) copyReportBtn.addEventListener('click', copyReportToClipboard);
 
     // Settings Modal
     const settingsBtn = document.getElementById('settingsBtn');
