@@ -270,6 +270,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const volumeSlider = document.getElementById('volumeSlider');
     const volumeValue = document.getElementById('volumeValue');
     const sprintStartSelect = document.getElementById('sprintStartSelect');
+    const refreshRateSelect = document.getElementById('refreshRateSelect');
 
     function openSettings() {
         if (settingsModal) settingsModal.classList.remove('hidden');
@@ -279,6 +280,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (sprintStartSelect) {
             sprintStartSelect.value = state.sprintStartDay;
+        }
+        if (refreshRateSelect) {
+            refreshRateSelect.value = state.timerRefreshRate;
         }
     }
 
@@ -307,6 +311,25 @@ document.addEventListener('DOMContentLoaded', () => {
             if (activeTab && activeTab.dataset.view === 'week') {
                 renderHistory('week');
             }
+        });
+    }
+
+    if (refreshRateSelect) {
+        refreshRateSelect.addEventListener('change', (e) => {
+            state.timerRefreshRate = parseInt(e.target.value);
+            localStorage.setItem('chrono_refresh_rate', state.timerRefreshRate);
+
+            import('./src/js/ui.js').then(module => {
+                module.startGlobalTicker();
+                module.renderTasks();
+                if (state.activeTaskId) {
+                    const task = state.tasks.find(t => t.id === state.activeTaskId);
+                    if (task) {
+                        const isRunning = task.timeLog.some(l => l.end === null);
+                        module.updateGlobalUI(task, isRunning ? 'running' : 'paused');
+                    }
+                }
+            });
         });
     }
 

@@ -38,7 +38,7 @@ export function renderTasks(newTaskId = null) {
                 <div class="todo-title" data-task-id="${task.id}" style="white-space: pre-wrap;">${task.title}</div>
                  <div class="todo-meta" style="margin-top:4px;">
                     <span class="todo-duration" data-task-id="${task.id}" style="font-family:monospace; color:var(--text-secondary); margin-right:10px;">
-                        ${formatTime(getTaskDuration(task))}
+                        ${formatTime(getTaskDuration(task), state.timerRefreshRate === 1000)}
                     </span>
                     ${task.createdAt ? `<span style="font-size:0.75rem; color:var(--text-muted); display:inline-block;">Created: ${formatDate(task.createdAt)}</span>` : ''}
                 </div>
@@ -156,7 +156,9 @@ export function updateGlobalUI(task, status) {
         globalActionBtn.title = "Pause";
         globalActionBtn.className = "btn btn-warning btn-icon";
         globalActionBtn.onclick = () => pauseTask(task.id);
-        document.title = `▶ ${formatTime(getTaskDuration(task))} - ${task.title}`;
+        const timeStr = formatTime(getTaskDuration(task), state.timerRefreshRate === 1000);
+        document.title = `▶ ${timeStr} - ${task.title}`;
+        globalTimerEl.textContent = timeStr;
     } else {
         activeTaskTitleEl.style.color = "var(--accent-warning)";
         globalActionBtn.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>`;
@@ -164,18 +166,22 @@ export function updateGlobalUI(task, status) {
         globalActionBtn.className = "btn btn-primary btn-icon";
         globalActionBtn.onclick = () => playTask(task.id);
         document.title = `❚❚ ${task.title}`;
+        globalTimerEl.textContent = formatTime(getTaskDuration(task), state.timerRefreshRate === 1000);
     }
 }
 
 export function startGlobalTicker() {
-    setInterval(() => {
+    if (state.timerInterval) clearInterval(state.timerInterval);
+
+    state.timerInterval = setInterval(() => {
         if (state.activeTaskId) {
             const task = state.tasks.find(t => t.id === state.activeTaskId);
             if (task) {
                 const isRunning = task.timeLog.some(l => l.end === null);
                 if (isRunning) {
                     const durationMs = getTaskDuration(task);
-                    const timeStr = formatTime(durationMs);
+                    const showSeconds = state.timerRefreshRate === 1000;
+                    const timeStr = formatTime(durationMs, showSeconds);
 
                     document.getElementById('globalTimer').textContent = timeStr;
                     document.title = `▶ ${timeStr} - ${task.title}`;
@@ -187,7 +193,7 @@ export function startGlobalTicker() {
                 }
             }
         }
-    }, 1000);
+    }, state.timerRefreshRate || 60000);
 }
 
 export function closeErrorModal() {
@@ -316,7 +322,7 @@ export function addManualTime() {
     saveData();
     const durationEl = document.querySelector(`.todo-duration[data-task-id="${state.currentManualTimeTaskId}"]`);
     if (durationEl) {
-        durationEl.textContent = formatTime(getTaskDuration(task));
+        durationEl.textContent = formatTime(getTaskDuration(task), state.timerRefreshRate === 1000);
     }
 
     sounds.playClick();

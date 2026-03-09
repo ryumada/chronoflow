@@ -114,7 +114,7 @@ export function renderHistory(view) {
                 <div style="flex:1;">
                     <div class="history-title">${task.title}</div>
                     <div style="margin-top:4px;">
-                        <span style="font-family:monospace; color:var(--text-secondary); margin-right:10px;">${formatTime(getTaskDuration(task))}</span>
+                        <span style="font-family:monospace; color:var(--text-secondary); margin-right:10px;">${formatTime(getTaskDuration(task), state.timerRefreshRate === 1000)}</span>
                         <span style="font-size:0.75rem; color:var(--text-muted); display:inline-block;">${dateDisplay}</span>
                     </div>
                 </div>
@@ -209,7 +209,7 @@ export function renderAnalytics(view, data, start, end) {
         const percent = Math.min((val / maxVal) * 100, 100);
         const barWrap = document.createElement('div');
         barWrap.className = 'bar-wrap';
-        barWrap.title = `${item.key}: ${formatTime(val)}`;
+        barWrap.title = `${item.key}: ${formatTime(val, state.timerRefreshRate === 1000)}`;
 
         barWrap.innerHTML = `
             <div class="bar" style="height: ${percent}%;"></div>
@@ -233,7 +233,7 @@ export function renderStats(data) {
     const source = data || state.history;
 
     let totalMs = source.reduce((acc, t) => acc + getTaskDuration(t), 0);
-    document.getElementById('totalTimeStat').textContent = formatTime(totalMs);
+    document.getElementById('totalTimeStat').textContent = formatTime(totalMs, state.timerRefreshRate === 1000);
     document.getElementById('completedCountStat').textContent = source.length;
 }
 
@@ -282,7 +282,7 @@ export function createReportString() {
         let dayTotal = 0;
         groups[dateKey].forEach(taskItem => {
             dayTotal += taskItem.duration;
-            report += `- **${taskItem.title}**: ${formatTime(taskItem.duration)}\n`;
+            report += `- **${taskItem.title}**: ${formatTime(taskItem.duration, state.timerRefreshRate === 1000)}\n`;
             if (taskItem.journal && taskItem.journal.length > 0) {
                 const dayJournals = taskItem.journal.filter(entry => new Date(entry.createdAt).toDateString() === dateKey);
                 dayJournals.forEach(entry => {
@@ -290,7 +290,7 @@ export function createReportString() {
                 });
             }
         });
-        report += `\n**Daily Total**: ${formatTime(dayTotal)}\n\n---\n\n`;
+        report += `\n**Daily Total**: ${formatTime(dayTotal, state.timerRefreshRate === 1000)}\n\n---\n\n`;
     });
 
     return report;

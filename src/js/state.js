@@ -13,5 +13,6 @@ export const state = {
     currentViewDate: new Date(),
     pendingDeleteId: null,
     currentManualTimeTaskId: null,
-    sprintStartDay: 0
+    sprintStartDay: 0,
+    timerRefreshRate: parseInt(localStorage.getItem('chrono_refresh_rate')) || 60000
 };
