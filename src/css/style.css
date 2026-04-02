@@ -587,6 +587,7 @@ input[type="range"]::-webkit-slider-runnable-track {
     align-items: center;
     padding: 0.75rem;
     border-bottom: 1px solid rgba(255,255,255,0.05);
+    cursor: default;
 }
 .history-item:last-child { border-bottom: none; }
 .history-title {
@@ -908,6 +909,13 @@ body.light-mode .priority-low {
 
 body.light-mode .priority-select {
     color: #1e293b;
+}
+
+/* History item priority dropdown should not be clickable */
+.history-item .priority-select {
+    cursor: default;
+    pointer-events: none;
+    opacity: 0.7;
 }
 
 /* Color-coded borders based on current selection */
