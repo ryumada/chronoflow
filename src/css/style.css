@@ -840,3 +840,66 @@ body.light-mode .task-menu-item:hover {
     border-radius: 6px; /* Smooth rounded edges */
     object-fit: cover;  /* Ensure the image fills the space correctly */
 }
+
+/* Priority Badge Styles */
+.priority-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-right: 8px;
+}
+
+.priority-high {
+    background: rgba(239, 68, 68, 0.15);
+    color: var(--accent-danger);
+}
+
+.priority-medium {
+    background: rgba(245, 158, 11, 0.15);
+    color: var(--accent-warning);
+}
+
+.priority-low {
+    background: rgba(16, 185, 129, 0.15);
+    color: var(--accent-success);
+}
+
+body.light-mode .priority-high {
+    background: rgba(239, 68, 68, 0.1);
+}
+
+body.light-mode .priority-medium {
+    background: rgba(245, 158, 11, 0.1);
+}
+
+body.light-mode .priority-low {
+    background: rgba(16, 185, 129, 0.1);
+}
+
+/* Priority Select Styles */
+.priority-select {
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 0.5rem;
+    color: var(--text-primary);
+    font-size: 0.8rem;
+    cursor: pointer;
+    outline: none;
+    height: fit-content;
+    align-self: center;
+}
+
+.priority-select:focus {
+    border-color: var(--accent-primary);
+}
+
+body.light-mode .priority-select {
+    background: #ffffff;
+    border-color: #cbd5e1;
+    color: #1e293b;
+}

@@ -99,6 +99,10 @@ export function renderHistory(view) {
             item.className = 'history-item';
             const lastLog = task.timeLog[task.timeLog.length - 1];
 
+            const priority = task.priority || 'medium';
+            const priorityLabels = { high: 'High', medium: 'Medium', low: 'Low' };
+            const priorityLabel = priorityLabels[priority] || 'Medium';
+
             const createdStr = task.createdAt ? formatDate(task.createdAt) : '';
             const completedDate = task.completedAt || (lastLog ? lastLog.end : null);
             const completedStr = completedDate ? formatDate(completedDate) : 'Unknown';
@@ -114,6 +118,7 @@ export function renderHistory(view) {
                 <div style="flex:1;">
                     <div class="history-title">${task.title}</div>
                     <div style="margin-top:4px;">
+                        <span class="priority-badge priority-${priority}">${priorityLabel}</span>
                         <span style="font-family:monospace; color:var(--text-secondary); margin-right:10px;">${formatTime(getTaskDuration(task), state.timerRefreshRate === 1000)}</span>
                         <span style="font-size:0.75rem; color:var(--text-muted); display:inline-block;">${dateDisplay}</span>
                     </div>

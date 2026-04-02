@@ -9,11 +9,12 @@ import { saveData } from './persistence.js';
 import { renderTasks, updateGlobalUI, updateTaskDOM, closeErrorModal, closeConfirmModal } from './ui.js';
 import { renderHistory } from './history.js';
 
-export function addTask(title) {
+export function addTask(title, priority = 'medium') {
     if (!title.trim()) return;
     const newTask = {
         id: crypto.randomUUID(),
         title: title,
+        priority: priority,
         timeLog: [],
         journal: [],
         createdAt: new Date().toISOString()

@@ -34,8 +34,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const themeToggle = document.getElementById('themeToggle');
     const activeControls = document.getElementById('activeControls');
 
-    if (addTaskBtn) addTaskBtn.addEventListener('click', () => addTask(newTaskInput.value));
-    if (newTaskInput) newTaskInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') addTask(newTaskInput.value) });
+    const newTaskPriority = document.getElementById('newTaskPriority');
+    if (addTaskBtn) addTaskBtn.addEventListener('click', () => addTask(newTaskInput.value, newTaskPriority.value));
+    if (newTaskInput) newTaskInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') addTask(newTaskInput.value, newTaskPriority.value) });
 
     tabBtns.forEach(btn => {
         btn.addEventListener('click', () => {

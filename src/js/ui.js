@@ -21,7 +21,20 @@ export function renderTasks(newTaskId = null) {
         return;
     }
 
-    state.tasks.forEach(task => {
+    // Sort tasks: high priority first, then medium, then low. Preserve original order within same priority.
+    const originalIndex = new Map();
+    state.tasks.forEach((task, index) => originalIndex.set(task.id, index));
+
+    const priorityOrder = { high: 0, medium: 1, low: 2 };
+    const sortedTasks = [...state.tasks].sort((a, b) => {
+        const aPriority = priorityOrder[a.priority || 'medium'] ?? 1;
+        const bPriority = priorityOrder[b.priority || 'medium'] ?? 1;
+        if (aPriority !== bPriority) return aPriority - bPriority;
+        // Preserve original order for same priority
+        return originalIndex.get(a.id) - originalIndex.get(b.id);
+    });
+
+    sortedTasks.forEach(task => {
         const el = document.createElement('div');
         el.className = `todo-item animate-slide-up`;
 
@@ -33,10 +46,15 @@ export function renderTasks(newTaskId = null) {
         if (isRunning) el.classList.add('active-running');
         else if (task.id === state.activeTaskId) el.classList.add('active-paused');
 
+        const priority = task.priority || 'medium';
+        const priorityLabels = { high: 'High', medium: 'Medium', low: 'Low' };
+        const priorityLabel = priorityLabels[priority] || 'Medium';
+
         el.innerHTML = `
             <div style="flex:1;">
                 <div class="todo-title" data-task-id="${task.id}" style="white-space: pre-wrap;">${task.title}</div>
                  <div class="todo-meta" style="margin-top:4px;">
+                    <span class="priority-badge priority-${priority}">${priorityLabel}</span>
                     <span class="todo-duration" data-task-id="${task.id}" style="font-family:monospace; color:var(--text-secondary); margin-right:10px;">
                         ${formatTime(getTaskDuration(task), state.timerRefreshRate === 1000)}
                     </span>
