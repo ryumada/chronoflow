@@ -851,6 +851,12 @@ body.light-mode .task-menu-item:hover {
     text-transform: uppercase;
     letter-spacing: 0.5px;
     margin-right: 8px;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.priority-badge:hover {
+    opacity: 0.8;
 }
 
 .priority-high {
@@ -885,13 +891,15 @@ body.light-mode .priority-low {
     background: var(--bg-input);
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
-    padding: 0.5rem;
+    padding: 0.25rem 0.35rem;
     color: var(--text-primary);
-    font-size: 0.8rem;
+    font-size: 0.7rem;
+    font-weight: 600;
     cursor: pointer;
     outline: none;
     height: fit-content;
     align-self: center;
+    transition: border-color 0.2s, background 0.2s;
 }
 
 .priority-select:focus {
@@ -899,7 +907,33 @@ body.light-mode .priority-low {
 }
 
 body.light-mode .priority-select {
-    background: #ffffff;
-    border-color: #cbd5e1;
     color: #1e293b;
+}
+
+/* Color-coded borders based on current selection */
+select.priority-select:has(option[value="high"]:checked) {
+    border-color: var(--accent-danger);
+    color: var(--accent-danger);
+}
+
+select.priority-select:has(option[value="medium"]:checked) {
+    border-color: var(--accent-warning);
+    color: var(--accent-warning);
+}
+
+select.priority-select:has(option[value="low"]:checked) {
+    border-color: var(--accent-success);
+    color: var(--accent-success);
+}
+
+body.light-mode select.priority-select:has(option[value="high"]:checked) {
+    background: rgba(239, 68, 68, 0.08);
+}
+
+body.light-mode select.priority-select:has(option[value="medium"]:checked) {
+    background: rgba(245, 158, 11, 0.08);
+}
+
+body.light-mode select.priority-select:has(option[value="low"]:checked) {
+    background: rgba(16, 185, 129, 0.08);
 }

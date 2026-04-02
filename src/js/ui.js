@@ -7,7 +7,7 @@ import { state } from './state.js';
 import { formatTime, formatDate, getTaskDuration } from './utils.js';
 import { sounds } from './audio.js';
 import { saveData } from './persistence.js';
-import { playTask, pauseTask, stopTask, deleteTask } from './tasks.js';
+import { playTask, pauseTask, stopTask, deleteTask, changeTaskPriority } from './tasks.js';
 import { openJournalModal, addJournal } from './journal.js';
 
 export function renderTasks(newTaskId = null) {
@@ -47,14 +47,16 @@ export function renderTasks(newTaskId = null) {
         else if (task.id === state.activeTaskId) el.classList.add('active-paused');
 
         const priority = task.priority || 'medium';
-        const priorityLabels = { high: 'High', medium: 'Medium', low: 'Low' };
-        const priorityLabel = priorityLabels[priority] || 'Medium';
 
         el.innerHTML = `
             <div style="flex:1;">
                 <div class="todo-title" data-task-id="${task.id}" style="white-space: pre-wrap;">${task.title}</div>
                  <div class="todo-meta" style="margin-top:4px;">
-                    <span class="priority-badge priority-${priority}">${priorityLabel}</span>
+                    <select class="priority-select" onchange="changeTaskPriority('${task.id}', this.value)">
+                        <option value="high" ${priority === 'high' ? 'selected' : ''}>High</option>
+                        <option value="medium" ${priority === 'medium' ? 'selected' : ''}>Medium</option>
+                        <option value="low" ${priority === 'low' ? 'selected' : ''}>Low</option>
+                    </select>
                     <span class="todo-duration" data-task-id="${task.id}" style="font-family:monospace; color:var(--text-secondary); margin-right:10px;">
                         ${formatTime(getTaskDuration(task), state.timerRefreshRate === 1000)}
                     </span>
@@ -114,6 +116,7 @@ export function renderTasks(newTaskId = null) {
     window.openManualTimeModal = openManualTimeModal;
     window.toggleTaskMenu = toggleTaskMenu;
     window.editTaskTitle = editTaskTitle;
+    window.changeTaskPriority = changeTaskPriority;
 }
 
 export function updateTaskDOM(taskId) {

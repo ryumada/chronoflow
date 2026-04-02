@@ -157,6 +157,14 @@ export function deleteTask(id) {
     performDelete(id);
 }
 
+export function changeTaskPriority(id, priority) {
+    const task = state.tasks.find(t => t.id === id);
+    if (!task) return;
+    task.priority = priority;
+    saveData();
+    renderTasks();
+}
+
 export function performDelete(id) {
     if (state.activeTaskId === id) {
         state.activeTaskId = null;
