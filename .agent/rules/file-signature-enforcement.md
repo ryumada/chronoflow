@@ -1,5 +1,5 @@
 ---
-trigger: always_on
+trigger: model_decision
 ---
 
 ### 📝 PROTOCOL: FILE_SIGNATURE_ENFORCEMENT
