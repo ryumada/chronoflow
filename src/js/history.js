@@ -255,29 +255,23 @@ export function createReportString() {
     let hasLog = false;
 
     state.history.forEach(task => {
-        task.timeLog.forEach(log => {
-            if (!log.end) return;
-            const logEnd = new Date(log.end);
-            if (logEnd >= start && logEnd <= end) {
-                hasLog = true;
-                const dateKey = logEnd.toDateString();
-                const logDuration = logEnd - new Date(log.start);
+        const lastLog = task.timeLog[task.timeLog.length - 1];
+        if (!lastLog) return;
+        const taskDate = new Date(lastLog.end || lastLog.start);
+        if (taskDate >= start && taskDate <= end) {
+            hasLog = true;
+            const dateKey = taskDate.toDateString();
+            const logDuration = getTaskDuration(task);
 
-                if (!groups[dateKey]) groups[dateKey] = [];
+            if (!groups[dateKey]) groups[dateKey] = [];
 
-                const existing = groups[dateKey].find(t => t.id === task.id);
-                if (existing) {
-                    existing.duration += logDuration;
-                } else {
-                    groups[dateKey].push({
-                        id: task.id,
-                        title: task.title,
-                        duration: logDuration,
-                        journal: task.journal
-                    });
-                }
-            }
-        });
+            groups[dateKey].push({
+                id: task.id,
+                title: task.title,
+                duration: logDuration,
+                journal: task.journal
+            });
+        }
     });
 
     if (!hasLog) {
@@ -291,8 +285,7 @@ export function createReportString() {
             dayTotal += taskItem.duration;
             report += `- **${taskItem.title}**: ${formatTime(taskItem.duration, state.timerRefreshRate === 1000)}\n`;
             if (taskItem.journal && taskItem.journal.length > 0) {
-                const dayJournals = taskItem.journal.filter(entry => new Date(entry.createdAt).toDateString() === dateKey);
-                dayJournals.forEach(entry => {
+                taskItem.journal.forEach(entry => {
                     report += `  - *${entry.title || 'Note'}*: ${entry.content}\n`;
                 });
             }
