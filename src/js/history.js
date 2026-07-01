@@ -257,11 +257,11 @@ export function createReportString() {
     state.history.forEach(task => {
         task.timeLog.forEach(log => {
             if (!log.end) return;
-            const logStart = new Date(log.start);
-            if (logStart >= start && logStart <= end) {
+            const logEnd = new Date(log.end);
+            if (logEnd >= start && logEnd <= end) {
                 hasLog = true;
-                const dateKey = logStart.toDateString();
-                const logDuration = new Date(log.end) - logStart;
+                const dateKey = logEnd.toDateString();
+                const logDuration = logEnd - new Date(log.start);
 
                 if (!groups[dateKey]) groups[dateKey] = [];
 
