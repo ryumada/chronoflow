@@ -1,13 +1,14 @@
 /**
  * @file tasks.js
  * @description Core business logic for tasks
- * @requires state, audio, persistence, ui, history
+ * @requires state, audio, persistence, ui, history, utils
  */
 import { state } from './state.js';
 import { sounds } from './audio.js';
 import { saveData } from './persistence.js';
 import { renderTasks, updateGlobalUI, updateTaskDOM, closeErrorModal, closeConfirmModal } from './ui.js';
 import { renderHistory } from './history.js';
+import { getTaskDuration, formatTime } from './utils.js';
 
 export function addTask(title, priority = 'medium') {
     if (!title.trim()) return;
@@ -189,4 +190,59 @@ export function performDelete(id) {
 
     sounds.playCleanup();
     closeConfirmModal();
+}
+
+export function createTasksReportString() {
+    let report = `# ChronoFlow Tasks List\nGenerated: ${new Date().toLocaleString()}\n\n`;
+
+    if (state.tasks.length === 0) {
+        return report + "No active tasks.";
+    }
+
+    report += `## Tasks (${state.tasks.length} active)\n\n`;
+
+    state.tasks.forEach(task => {
+        const priorityStr = task.priority ? `[${task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}] ` : '';
+        const duration = getTaskDuration(task);
+        const durationStr = formatTime(duration, state.timerRefreshRate === 1000);
+
+        report += `- **${priorityStr}${task.title}**: ${durationStr}\n`;
+        if (task.journal && task.journal.length > 0) {
+            task.journal.forEach(entry => {
+                report += `  - *${entry.title || 'Note'}*: ${entry.content}\n`;
+            });
+        }
+    });
+
+    return report;
+}
+
+export function generateTasksReport() {
+    const report = createTasksReportString();
+    const blob = new Blob([report], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `ChronoFlow_Tasks_${new Date().toISOString().split('T')[0]}.md`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+export function copyTasksToClipboard() {
+    const report = createTasksReportString();
+    navigator.clipboard.writeText(report).then(() => {
+        const btn = document.getElementById('copyTasksBtn');
+        if (!btn) return;
+        const originalHtml = btn.innerHTML;
+        // Show Checkmark
+        btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+        setTimeout(() => {
+            btn.innerHTML = originalHtml;
+        }, 2000);
+    }).catch(err => {
+        console.error('Failed to copy tasks: ', err);
+        alert('Failed to copy tasks to clipboard');
+    });
 }

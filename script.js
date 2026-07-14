@@ -9,7 +9,7 @@ import { loadData, saveData } from './src/js/persistence.js';
 import { loadTheme, toggleTheme } from './src/js/theme.js';
 import { renderTasks, startGlobalTicker, closeErrorModal, closeConfirmModal, closeManualTimeModal, addManualTime } from './src/js/ui.js';
 import { renderHistory, changePeriod, generateReport, copyReportToClipboard } from './src/js/history.js';
-import { addTask, playTask } from './src/js/tasks.js';
+import { addTask, playTask, generateTasksReport, copyTasksToClipboard } from './src/js/tasks.js';
 import { sounds } from './src/js/audio.js';
 import { closeJournalModal, addJournal, copyJournalToClipboard } from './src/js/journal.js';
 import { getTaskDuration, formatTime, formatDate } from './src/js/utils.js';
@@ -262,6 +262,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (exportReportBtn) exportReportBtn.addEventListener('click', generateReport);
     if (copyReportBtn) copyReportBtn.addEventListener('click', copyReportToClipboard);
+
+    // Tasks Export Logic
+    const exportTasksBtn = document.getElementById('exportTasksBtn');
+    const copyTasksBtn = document.getElementById('copyTasksBtn');
+
+    if (exportTasksBtn) exportTasksBtn.addEventListener('click', generateTasksReport);
+    if (copyTasksBtn) copyTasksBtn.addEventListener('click', copyTasksToClipboard);
 
     // Settings Modal
     const settingsBtn = document.getElementById('settingsBtn');
