@@ -15,5 +15,5 @@ context: Session Lifecycle Management
 At the **beginning of every session**, before running other commands or modifications, you MUST:
 
 1. Retrieve relevant context by running the ICM recall command on the active project/task:
-   - Run: `rtk proxy icm recall-context "essentia" --limit 5`
+   - Run: `icm recall-context "essentia" --limit 5`
 2. Integrate the recalled context into your current plan.

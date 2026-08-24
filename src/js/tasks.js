@@ -81,7 +81,11 @@ export function pauseTask(id) {
     updateTaskDOM(id);
 }
 
+const completingTaskIds = new Set();
+
 export function stopTask(id) {
+    if (completingTaskIds.has(id)) return;
+
     const taskIndex = state.tasks.findIndex(t => t.id === id);
     if (taskIndex === -1) return;
 
@@ -94,6 +98,11 @@ export function stopTask(id) {
         return;
     }
 
+    completingTaskIds.add(id);
+
+    const menu = document.getElementById(`menu-${id}`);
+    if (menu) menu.classList.remove('show');
+
     const activeLog = task.timeLog.find(l => l.end === null);
     if (activeLog) {
         activeLog.end = new Date().toISOString();
@@ -102,14 +111,37 @@ export function stopTask(id) {
     task.completedAt = new Date().toISOString();
 
     const taskEl = document.querySelector(`.todo-item button[onclick="stopTask('${id}')"]`);
+    if (taskEl) {
+        taskEl.disabled = true;
+    }
     const parentTaskEl = taskEl ? taskEl.closest('.todo-item') : null;
 
     if (parentTaskEl) {
         parentTaskEl.classList.add('animate-slide-out');
         sounds.playComplete();
         setTimeout(() => {
-            state.tasks = state.tasks.filter(t => t.id !== id);
-            state.history.unshift(task);
+            try {
+                state.tasks = state.tasks.filter(t => t.id !== id);
+                if (!state.history.some(t => t.id === id)) {
+                    state.history.unshift(task);
+                }
+
+                if (state.activeTaskId === id) {
+                    state.activeTaskId = null;
+                    updateGlobalUI(null, 'idle');
+                }
+
+                saveData();
+            } finally {
+                completingTaskIds.delete(id);
+            }
+        }, 300);
+    } else {
+        try {
+            state.tasks.splice(taskIndex, 1);
+            if (!state.history.some(t => t.id === id)) {
+                state.history.unshift(task);
+            }
 
             if (state.activeTaskId === id) {
                 state.activeTaskId = null;
@@ -117,17 +149,9 @@ export function stopTask(id) {
             }
 
             saveData();
-        }, 300);
-    } else {
-        state.history.unshift(task);
-        state.tasks.splice(taskIndex, 1);
-
-        if (state.activeTaskId === id) {
-            state.activeTaskId = null;
-            updateGlobalUI(null, 'idle');
+        } finally {
+            completingTaskIds.delete(id);
         }
-
-        saveData();
     }
 }
 
