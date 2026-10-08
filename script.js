@@ -2,7 +2,7 @@
  * @file script.js
  * @category Core
  * @description Main entry point for ChronoFlow
- * @requires state, ui, theme, persistence, tasks, audio, history, journal, utils
+ * @requires state, ui, theme, persistence, tasks, audio, history, journal, utils, sync
  */
 import { state } from './src/js/state.js';
 import { loadData, saveData } from './src/js/persistence.js';
@@ -13,6 +13,17 @@ import { addTask, playTask, generateTasksReport, copyTasksToClipboard } from './
 import { sounds } from './src/js/audio.js';
 import { closeJournalModal, addJournal, copyJournalToClipboard } from './src/js/journal.js';
 import { getTaskDuration, formatTime, formatDate } from './src/js/utils.js';
+import {
+    getSavedUser,
+    getCloudMeta,
+    signIn as googleSignIn,
+    uploadBackup as googleUploadBackup,
+    downloadBackup as googleDownloadBackup,
+    disconnect as googleDisconnect,
+    findCloudBackup as googleFindCloudBackup,
+    getClientId as getGoogleClientId,
+    setClientId as setGoogleClientId
+} from './src/js/sync.js';
 
 function init() {
     loadData();
@@ -270,6 +281,208 @@ document.addEventListener('DOMContentLoaded', () => {
     if (exportTasksBtn) exportTasksBtn.addEventListener('click', generateTasksReport);
     if (copyTasksBtn) copyTasksBtn.addEventListener('click', copyTasksToClipboard);
 
+    // Google Drive Cloud Sync
+    const googleSyncDisconnected = document.getElementById('googleSyncDisconnected');
+    const googleSyncConnected = document.getElementById('googleSyncConnected');
+    const googleUserAvatar = document.getElementById('googleUserAvatar');
+    const googleUserName = document.getElementById('googleUserName');
+    const googleUserEmail = document.getElementById('googleUserEmail');
+    const cloudLastSyncTime = document.getElementById('cloudLastSyncTime');
+    const cloudBackupSize = document.getElementById('cloudBackupSize');
+    const btnGoogleSignin = document.getElementById('btnGoogleSignin');
+    const btnGoogleSignout = document.getElementById('btnGoogleSignout');
+    const btnCloudBackup = document.getElementById('btnCloudBackup');
+    const btnCloudRestore = document.getElementById('btnCloudRestore');
+    const googleClientIdInput = document.getElementById('googleClientIdInput');
+    const btnSaveClientId = document.getElementById('btnSaveClientId');
+
+    const cloudRestoreModal = document.getElementById('cloudRestoreModal');
+    const closeCloudRestoreModalDom = document.getElementById('closeCloudRestoreModal');
+    const cancelCloudRestoreBtn = document.getElementById('cancelCloudRestoreBtn');
+    const confirmCloudRestoreBtn = document.getElementById('confirmCloudRestoreBtn');
+    const cloudRestoreModalTime = document.getElementById('cloudRestoreModalTime');
+    const cloudRestoreModalSize = document.getElementById('cloudRestoreModalSize');
+    let pendingCloudRestoreData = null;
+
+    function updateGoogleSyncUI(user, meta) {
+        if (!googleSyncDisconnected || !googleSyncConnected) return;
+
+        if (user) {
+            googleSyncDisconnected.classList.add('hidden');
+            googleSyncConnected.classList.remove('hidden');
+
+            if (googleUserAvatar) googleUserAvatar.src = user.picture || 'src/img/favicon.png';
+            if (googleUserName) googleUserName.textContent = user.name || 'Google User';
+            if (googleUserEmail) googleUserEmail.textContent = user.email || '';
+
+            const currentMeta = meta || getCloudMeta();
+            if (currentMeta) {
+                if (cloudLastSyncTime) {
+                    cloudLastSyncTime.textContent = currentMeta.lastSyncTime ? new Date(currentMeta.lastSyncTime).toLocaleString() : 'Never';
+                }
+                if (cloudBackupSize) {
+                    cloudBackupSize.textContent = currentMeta.sizeBytes ? `${(currentMeta.sizeBytes / 1024).toFixed(1)} KB` : '-';
+                }
+            } else {
+                if (cloudLastSyncTime) cloudLastSyncTime.textContent = 'Never';
+                if (cloudBackupSize) cloudBackupSize.textContent = '-';
+            }
+        } else {
+            googleSyncDisconnected.classList.remove('hidden');
+            googleSyncConnected.classList.add('hidden');
+        }
+
+        if (googleClientIdInput) {
+            googleClientIdInput.value = getGoogleClientId();
+        }
+    }
+
+    if (btnGoogleSignin) {
+        btnGoogleSignin.addEventListener('click', async () => {
+            try {
+                await googleSignIn();
+                const user = getSavedUser();
+                if (user) {
+                    sounds.playSuccess();
+                    updateGoogleSyncUI(user);
+
+                    try {
+                        const cloudFile = await googleFindCloudBackup();
+                        if (cloudFile) {
+                            updateGoogleSyncUI(user, {
+                                lastSyncTime: cloudFile.modifiedTime,
+                                sizeBytes: cloudFile.size
+                            });
+                        }
+                    } catch (e) {
+                        console.warn('Could not inspect cloud file:', e);
+                    }
+                }
+            } catch (err) {
+                console.error('Google Sign In Error:', err);
+                alert(err.message || 'Google sign-in failed. Please check your connection or popup settings.');
+            }
+        });
+    }
+
+    if (btnGoogleSignout) {
+        btnGoogleSignout.addEventListener('click', () => {
+            googleDisconnect();
+            updateGoogleSyncUI(null);
+            sounds.playClick();
+        });
+    }
+
+    if (btnSaveClientId) {
+        btnSaveClientId.addEventListener('click', () => {
+            if (googleClientIdInput) {
+                setGoogleClientId(googleClientIdInput.value);
+                alert('OAuth Client ID saved successfully!');
+            }
+        });
+    }
+
+    if (btnCloudBackup) {
+        btnCloudBackup.addEventListener('click', async () => {
+            try {
+                btnCloudBackup.disabled = true;
+                btnCloudBackup.textContent = 'Uploading...';
+                const meta = await googleUploadBackup();
+                const user = getSavedUser();
+                updateGoogleSyncUI(user, meta);
+                sounds.playSuccess();
+                alert('Backup successfully uploaded to your Google Drive AppData folder!');
+            } catch (err) {
+                console.error('Cloud Backup Error:', err);
+                sounds.playWarning();
+                alert(err.message || 'Cloud backup failed.');
+            } finally {
+                btnCloudBackup.disabled = false;
+                btnCloudBackup.innerHTML = `
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>
+                        <polyline points="12 13 12 7 9 10"/>
+                        <polyline points="12 7 15 10"/>
+                    </svg>
+                    <span>Backup (Upload)</span>
+                `;
+            }
+        });
+    }
+
+    function closeCloudRestoreModal() {
+        if (cloudRestoreModal) cloudRestoreModal.classList.add('hidden');
+        pendingCloudRestoreData = null;
+    }
+
+    if (btnCloudRestore) {
+        btnCloudRestore.addEventListener('click', async () => {
+            try {
+                btnCloudRestore.disabled = true;
+                btnCloudRestore.textContent = 'Checking...';
+                const { data, meta } = await googleDownloadBackup();
+                pendingCloudRestoreData = data;
+
+                if (cloudRestoreModalTime) {
+                    cloudRestoreModalTime.textContent = meta.lastSyncTime ? new Date(meta.lastSyncTime).toLocaleString() : 'Unknown';
+                }
+                if (cloudRestoreModalSize) {
+                    cloudRestoreModalSize.textContent = meta.sizeBytes ? `${(meta.sizeBytes / 1024).toFixed(1)} KB` : 'Unknown';
+                }
+
+                if (cloudRestoreModal) cloudRestoreModal.classList.remove('hidden');
+            } catch (err) {
+                console.error('Cloud Restore Error:', err);
+                sounds.playWarning();
+                alert(err.message || 'Failed to download cloud backup.');
+            } finally {
+                btnCloudRestore.disabled = false;
+                btnCloudRestore.innerHTML = `
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/>
+                        <polyline points="12 10 12 16 9 13"/>
+                        <polyline points="12 16 15 13"/>
+                    </svg>
+                    <span>Restore (Download)</span>
+                `;
+            }
+        });
+    }
+
+    if (closeCloudRestoreModalDom) closeCloudRestoreModalDom.addEventListener('click', closeCloudRestoreModal);
+    if (cancelCloudRestoreBtn) cancelCloudRestoreBtn.addEventListener('click', closeCloudRestoreModal);
+    if (cloudRestoreModal) {
+        cloudRestoreModal.addEventListener('click', (e) => {
+            if (e.target.id === 'cloudRestoreModal') closeCloudRestoreModal();
+        });
+    }
+
+    if (confirmCloudRestoreBtn) {
+        confirmCloudRestoreBtn.addEventListener('click', () => {
+            if (!pendingCloudRestoreData) return;
+
+            state.tasks = Array.isArray(pendingCloudRestoreData.tasks) ? pendingCloudRestoreData.tasks : [];
+            state.history = Array.isArray(pendingCloudRestoreData.history) ? pendingCloudRestoreData.history : [];
+            if (pendingCloudRestoreData.sprintStartDay !== undefined) {
+                state.sprintStartDay = pendingCloudRestoreData.sprintStartDay;
+                localStorage.setItem('chrono_sprint_start_day', state.sprintStartDay);
+            }
+            if (pendingCloudRestoreData.timerRefreshRate !== undefined) {
+                state.timerRefreshRate = pendingCloudRestoreData.timerRefreshRate;
+                localStorage.setItem('chrono_refresh_rate', state.timerRefreshRate);
+            }
+
+            saveData();
+            renderTasks();
+            const activeTab = document.querySelector('.tab-btn.active');
+            renderHistory(activeTab ? activeTab.dataset.view : 'day');
+
+            sounds.playSuccess();
+            closeCloudRestoreModal();
+            alert('Cloud backup successfully restored!');
+        });
+    }
+
     // Settings Modal
     const settingsBtn = document.getElementById('settingsBtn');
     const settingsModal = document.getElementById('settingsModal');
@@ -292,6 +505,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (refreshRateSelect) {
             refreshRateSelect.value = state.timerRefreshRate;
         }
+
+        updateGoogleSyncUI(getSavedUser(), getCloudMeta());
     }
 
     function closeSettings() {
@@ -360,6 +575,7 @@ document.addEventListener('DOMContentLoaded', () => {
             closeJournalModal();
             closeConfirmModal();
             closeErrorModal();
+            closeCloudRestoreModal();
             if (settingsModal && !settingsModal.classList.contains('hidden')) closeSettings();
             closeShortcutsModal();
             closeManualTimeModal();
@@ -383,6 +599,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    updateGoogleSyncUI(getSavedUser(), getCloudMeta());
     init();
 });
 

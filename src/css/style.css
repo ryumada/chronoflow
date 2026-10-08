@@ -757,6 +757,42 @@ input[type="range"]:focus::-webkit-slider-thumb {
     box-shadow: 0 0 0 6px rgba(59, 130, 246, 0.4);
 }
 
+/* Google Cloud Sync Styles */
+.cloud-sync-card {
+    background: linear-gradient(145deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
+    border: 1px solid var(--border);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.cloud-sync-card:hover {
+    border-color: rgba(59, 130, 246, 0.4);
+}
+
+#btnGoogleSignin {
+    background: #ffffff;
+    color: #374151;
+    border: 1px solid #d1d5db;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+#btnGoogleSignin:hover {
+    background: #f9fafb;
+    box-shadow: 0 4px 12px rgba(66, 133, 244, 0.15);
+    transform: translateY(-1px);
+}
+
+body.light-mode .cloud-sync-card {
+    background: #f8fafc;
+    border-color: #e2e8f0;
+}
+
+body.light-mode #btnGoogleSignin {
+    background: #ffffff;
+    color: #1f2937;
+    border-color: #e5e7eb;
+}
+
 /* Task Menu & Editing Styles */
 .task-menu-container {
     position: relative;
