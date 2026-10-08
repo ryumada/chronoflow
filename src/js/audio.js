@@ -70,6 +70,10 @@ export class SoundManager {
         this.playTone(1046.50, 'triangle', 0.8, 0.3, 0.2);// C6
     }
 
+    playSuccess() {
+        this.playComplete();
+    }
+
     playClick() {
         if (this.ctx.state === 'suspended') this.ctx.resume();
         // Very short, high "tick" for general feedback
