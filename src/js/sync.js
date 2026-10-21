@@ -11,10 +11,16 @@ const BACKUP_FILENAME = 'chronoflow-backup.json';
 const STORAGE_KEY_AUTH = 'chrono_google_sync_auth';
 const STORAGE_KEY_META = 'chrono_google_sync_meta';
 const STORAGE_KEY_CLIENT_ID = 'chrono_google_client_id';
+const STORAGE_KEY_TOKEN = 'chrono_google_sync_token';
 
 let tokenClient = null;
-let activeAccessToken = null;
-let tokenExpiresAt = 0;
+let currentTokenResolve = null;
+let currentTokenReject = null;
+
+// Initialize active token and expiration from persisted storage if still valid
+const initialTokenData = getSavedToken();
+let activeAccessToken = (initialTokenData && Date.now() < (initialTokenData.expiresAt - 60000)) ? initialTokenData.accessToken : null;
+let tokenExpiresAt = initialTokenData ? (initialTokenData.expiresAt || 0) : 0;
 
 /**
  * Get active Google Client ID (custom or default)
@@ -33,6 +39,32 @@ export function setClientId(customId) {
         localStorage.removeItem(STORAGE_KEY_CLIENT_ID);
     }
     tokenClient = null;
+    activeAccessToken = null;
+    tokenExpiresAt = 0;
+    saveToken(null);
+}
+
+/**
+ * Retrieve saved OAuth token from localStorage
+ */
+export function getSavedToken() {
+    try {
+        const raw = localStorage.getItem(STORAGE_KEY_TOKEN);
+        return raw ? JSON.parse(raw) : null;
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * Save OAuth token to localStorage
+ */
+export function saveToken(tokenData) {
+    if (tokenData && tokenData.accessToken && tokenData.expiresAt) {
+        localStorage.setItem(STORAGE_KEY_TOKEN, JSON.stringify(tokenData));
+    } else {
+        localStorage.removeItem(STORAGE_KEY_TOKEN);
+    }
 }
 
 /**
@@ -84,7 +116,7 @@ export function saveCloudMeta(meta) {
 /**
  * Initialize Google Token Client via Google Identity Services
  */
-function initClient(onSuccessCallback, onErrorCallback) {
+function initClient() {
     if (typeof window.google === 'undefined' || !window.google.accounts || !window.google.accounts.oauth2) {
         console.warn('Google Identity Services library not yet loaded.');
         return false;
@@ -99,22 +131,47 @@ function initClient(onSuccessCallback, onErrorCallback) {
                     activeAccessToken = tokenResponse.access_token;
                     tokenExpiresAt = Date.now() + ((tokenResponse.expires_in || 3600) * 1000);
 
+                    saveToken({
+                        accessToken: activeAccessToken,
+                        expiresAt: tokenExpiresAt
+                    });
+
                     try {
                         const userInfo = await fetchUserProfile(activeAccessToken);
                         saveUser(userInfo);
-                        if (onSuccessCallback) onSuccessCallback(userInfo, activeAccessToken);
+                        if (currentTokenResolve) {
+                            const resolve = currentTokenResolve;
+                            currentTokenResolve = null;
+                            currentTokenReject = null;
+                            resolve(activeAccessToken);
+                        }
                     } catch (err) {
                         console.error('Failed to fetch user profile:', err);
-                        if (onErrorCallback) onErrorCallback(err);
+                        if (currentTokenReject) {
+                            const reject = currentTokenReject;
+                            currentTokenResolve = null;
+                            currentTokenReject = null;
+                            reject(err);
+                        }
                     }
                 } else if (tokenResponse && tokenResponse.error) {
                     console.error('Google Auth Error:', tokenResponse);
-                    if (onErrorCallback) onErrorCallback(new Error(tokenResponse.error_description || tokenResponse.error));
+                    if (currentTokenReject) {
+                        const reject = currentTokenReject;
+                        currentTokenResolve = null;
+                        currentTokenReject = null;
+                        reject(new Error(tokenResponse.error_description || tokenResponse.error));
+                    }
                 }
             },
             error_callback: (err) => {
                 console.error('GIS Error:', err);
-                if (onErrorCallback) onErrorCallback(err);
+                if (currentTokenReject) {
+                    const reject = currentTokenReject;
+                    currentTokenResolve = null;
+                    currentTokenReject = null;
+                    reject(err);
+                }
             }
         });
     }
@@ -123,22 +180,52 @@ function initClient(onSuccessCallback, onErrorCallback) {
 }
 
 /**
- * Request OAuth token via interactive popup
+ * Request OAuth token, returning cached/persisted token if valid or requesting via GIS
  */
 export function requestToken(promptMode = '') {
     return new Promise((resolve, reject) => {
+        // Check persisted token if memory token is missing
+        if (!activeAccessToken) {
+            const saved = getSavedToken();
+            if (saved && Date.now() < (saved.expiresAt - 60000)) {
+                activeAccessToken = saved.accessToken;
+                tokenExpiresAt = saved.expiresAt;
+            }
+        }
+
         if (activeAccessToken && Date.now() < tokenExpiresAt - 60000) {
             resolve(activeAccessToken);
             return;
         }
 
-        if (!initClient((user, token) => resolve(token), (err) => reject(err))) {
+        if (!initClient()) {
             reject(new Error('Google Identity Services library is not loaded. Please check your internet connection.'));
             return;
         }
 
-        tokenClient.requestAccessToken({ prompt: promptMode });
+        currentTokenResolve = resolve;
+        currentTokenReject = reject;
+
+        const requestConfig = { prompt: promptMode };
+        const savedUser = getSavedUser();
+        if (savedUser && savedUser.email && !promptMode) {
+            requestConfig.hint = savedUser.email;
+        }
+
+        tokenClient.requestAccessToken(requestConfig);
     });
+}
+
+/**
+ * Handle HTTP 401 responses by invalidating saved token
+ */
+function handleAuthError(res) {
+    if (res.status === 401) {
+        activeAccessToken = null;
+        tokenExpiresAt = 0;
+        saveToken(null);
+        throw new Error('Google authorization expired or revoked. Please sign in again.');
+    }
 }
 
 /**
@@ -148,7 +235,10 @@ async function fetchUserProfile(token) {
     const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
         headers: { Authorization: `Bearer ${token}` }
     });
-    if (!res.ok) throw new Error('Could not fetch user profile from Google');
+    if (!res.ok) {
+        handleAuthError(res);
+        throw new Error('Could not fetch user profile from Google');
+    }
     return await res.json();
 }
 
@@ -165,6 +255,7 @@ export async function findCloudBackup(token) {
     });
 
     if (!res.ok) {
+        handleAuthError(res);
         const errText = await res.text();
         throw new Error(`Google Drive API error (${res.status}): ${errText}`);
     }
@@ -204,6 +295,7 @@ export async function uploadBackup() {
         });
 
         if (!res.ok) {
+            handleAuthError(res);
             const errText = await res.text();
             throw new Error(`Failed to update cloud backup (${res.status}): ${errText}`);
         }
@@ -239,6 +331,7 @@ export async function uploadBackup() {
         });
 
         if (!res.ok) {
+            handleAuthError(res);
             const errText = await res.text();
             throw new Error(`Failed to create cloud backup (${res.status}): ${errText}`);
         }
@@ -271,6 +364,7 @@ export async function downloadBackup() {
     });
 
     if (!res.ok) {
+        handleAuthError(res);
         const errText = await res.text();
         throw new Error(`Failed to download cloud backup (${res.status}): ${errText}`);
     }
@@ -304,6 +398,7 @@ export function disconnect() {
     }
     activeAccessToken = null;
     tokenExpiresAt = 0;
+    saveToken(null);
     saveUser(null);
     saveCloudMeta(null);
 }

@@ -31,7 +31,7 @@ Task(
 Use these tags to set the agent's behavior. Full definitions: [`.agents/rules/references/agent-personas-ref.md`](.agents/rules/references/agent-personas-ref.md).
 
 * **@flash:** Execution agent — phased, localized reasoning, enforces 5-line signatures.
-* **@pro:** Senior Architect — reads maps only, outputs to `implementation_plan.md`, never executes without explicit command.
+* **@pro:** Senior Architect — reads maps only, outputs implementation plan (via Antigravity/Gemini artifacts, or to `.agents/implementation_plan.md` for CLI agents), never executes without explicit command.
 
 ## References
 - Lint command: `npm run lint`

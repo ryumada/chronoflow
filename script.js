@@ -1,6 +1,5 @@
 /**
  * @file script.js
- * @category Core
  * @description Main entry point for ChronoFlow
  * @requires state, ui, theme, persistence, tasks, audio, history, journal, utils, sync
  */
