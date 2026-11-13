@@ -554,6 +554,45 @@
         </div>
     </div>
 
+    <!-- Cloud Sync Completed Modal -->
+    <div id="cloudSyncSuccessModal" class="modal-overlay hidden">
+        <div class="modal" style="max-width: 420px; height: auto; border-top: 4px solid var(--accent-success);">
+            <div class="modal-header">
+                <div style="display: flex; align-items: center; gap: 0.6rem;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent-success)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                    </svg>
+                    <h3 id="cloudSyncSuccessTitle">Sync Completed</h3>
+                </div>
+                <button id="closeCloudSyncSuccessModal" class="btn btn-icon btn-sm" title="Close">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p id="cloudSyncSuccessMessage" style="color:var(--text-secondary); font-size:0.9rem; margin-bottom:1rem; line-height: 1.4;">
+                    Your cloud sync operation has completed successfully.
+                </p>
+                <div style="background: var(--bg-input); padding: 0.85rem; border-radius: var(--radius-sm); font-size: 0.85rem; margin-bottom: 1.25rem; border: 1px solid var(--border);">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                        <span id="cloudSyncSuccessDetail1Label" style="color: var(--text-muted);">-</span>
+                        <span id="cloudSyncSuccessDetail1Value" style="color: var(--text-primary); font-weight: 600;">-</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span id="cloudSyncSuccessDetail2Label" style="color: var(--text-muted);">-</span>
+                        <span id="cloudSyncSuccessDetail2Value" style="color: var(--text-primary); font-weight: 600;">-</span>
+                    </div>
+                </div>
+                <div style="display: flex; justify-content: flex-end;">
+                    <button id="closeCloudSyncSuccessOkBtn" class="btn btn-primary">Done</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Manual Time Modal -->
     <div id="manualTimeModal" class="modal-overlay hidden">
         <div class="modal" style="max-width: 400px; height: auto;">

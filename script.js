@@ -303,6 +303,38 @@ document.addEventListener('DOMContentLoaded', () => {
     const cloudRestoreModalSize = document.getElementById('cloudRestoreModalSize');
     let pendingCloudRestoreData = null;
 
+    const cloudSyncSuccessModal = document.getElementById('cloudSyncSuccessModal');
+    const closeCloudSyncSuccessModalDom = document.getElementById('closeCloudSyncSuccessModal');
+    const closeCloudSyncSuccessOkBtn = document.getElementById('closeCloudSyncSuccessOkBtn');
+    const cloudSyncSuccessTitle = document.getElementById('cloudSyncSuccessTitle');
+    const cloudSyncSuccessMessage = document.getElementById('cloudSyncSuccessMessage');
+    const cloudSyncSuccessDetail1Label = document.getElementById('cloudSyncSuccessDetail1Label');
+    const cloudSyncSuccessDetail1Value = document.getElementById('cloudSyncSuccessDetail1Value');
+    const cloudSyncSuccessDetail2Label = document.getElementById('cloudSyncSuccessDetail2Label');
+    const cloudSyncSuccessDetail2Value = document.getElementById('cloudSyncSuccessDetail2Value');
+
+    function openCloudSyncSuccessModal({ title, message, detail1Label, detail1Value, detail2Label, detail2Value }) {
+        if (cloudSyncSuccessTitle) cloudSyncSuccessTitle.textContent = title;
+        if (cloudSyncSuccessMessage) cloudSyncSuccessMessage.textContent = message;
+        if (cloudSyncSuccessDetail1Label) cloudSyncSuccessDetail1Label.textContent = detail1Label;
+        if (cloudSyncSuccessDetail1Value) cloudSyncSuccessDetail1Value.textContent = detail1Value;
+        if (cloudSyncSuccessDetail2Label) cloudSyncSuccessDetail2Label.textContent = detail2Label;
+        if (cloudSyncSuccessDetail2Value) cloudSyncSuccessDetail2Value.textContent = detail2Value;
+        if (cloudSyncSuccessModal) cloudSyncSuccessModal.classList.remove('hidden');
+    }
+
+    function closeCloudSyncSuccessModal() {
+        if (cloudSyncSuccessModal) cloudSyncSuccessModal.classList.add('hidden');
+    }
+
+    if (closeCloudSyncSuccessModalDom) closeCloudSyncSuccessModalDom.addEventListener('click', closeCloudSyncSuccessModal);
+    if (closeCloudSyncSuccessOkBtn) closeCloudSyncSuccessOkBtn.addEventListener('click', closeCloudSyncSuccessModal);
+    if (cloudSyncSuccessModal) {
+        cloudSyncSuccessModal.addEventListener('click', (e) => {
+            if (e.target.id === 'cloudSyncSuccessModal') closeCloudSyncSuccessModal();
+        });
+    }
+
     function updateGoogleSyncUI(user, meta) {
         if (!googleSyncDisconnected || !googleSyncConnected) return;
 
@@ -390,7 +422,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 const user = getSavedUser();
                 updateGoogleSyncUI(user, meta);
                 sounds.playSuccess();
-                alert('Backup successfully uploaded to your Google Drive AppData folder!');
+                openCloudSyncSuccessModal({
+                    title: 'Backup Completed',
+                    message: 'Your tasks and history have been successfully uploaded to your Google Drive AppData folder.',
+                    detail1Label: 'Uploaded At:',
+                    detail1Value: meta.lastSyncTime ? new Date(meta.lastSyncTime).toLocaleString() : 'Just now',
+                    detail2Label: 'Backup Size:',
+                    detail2Value: meta.sizeBytes ? `${(meta.sizeBytes / 1024).toFixed(1)} KB` : '-'
+                });
             } catch (err) {
                 console.error('Cloud Backup Error:', err);
                 sounds.playWarning();
@@ -478,7 +517,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
             sounds.playSuccess();
             closeCloudRestoreModal();
-            alert('Cloud backup successfully restored!');
+            openCloudSyncSuccessModal({
+                title: 'Restore Completed',
+                message: 'Your tasks and history have been successfully restored from your Google Drive backup.',
+                detail1Label: 'Tasks Restored:',
+                detail1Value: `${state.tasks.length}`,
+                detail2Label: 'History Records:',
+                detail2Value: `${state.history.length}`
+            });
         });
     }
 
@@ -575,6 +621,7 @@ document.addEventListener('DOMContentLoaded', () => {
             closeConfirmModal();
             closeErrorModal();
             closeCloudRestoreModal();
+            closeCloudSyncSuccessModal();
             if (settingsModal && !settingsModal.classList.contains('hidden')) closeSettings();
             closeShortcutsModal();
             closeManualTimeModal();
