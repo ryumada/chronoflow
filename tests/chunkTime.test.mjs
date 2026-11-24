@@ -121,3 +121,41 @@ test('chunkTimeFromTask rejects duration exceeding tracked time or empty title',
     assert.equal(chunkTimeFromTask('src-2', 'Valid', 'low', 45 * 60_000).ok, false);
     assert.equal(state.tasks.length, 1);
 });
+
+test('splitTimeLogs preserves manual flag on carved logs and ignores zero-duration logs', () => {
+    const nowMs = Date.UTC(2026, 10, 24, 15, 0, 0);
+    const logs = [
+        { id: 'm1', start: new Date(nowMs - 60 * 60_000).toISOString(), end: new Date(nowMs).toISOString(), manual: true },
+        { id: 'zero', start: new Date(nowMs).toISOString(), end: new Date(nowMs).toISOString() }
+    ];
+
+    const { remainingLogs, chunkedLogs } = splitTimeLogs(logs, 20 * 60_000, nowMs);
+    assert.equal(chunkedLogs.length, 1);
+    assert.equal(chunkedLogs[0].manual, true);
+    assert.equal(sumLogs(chunkedLogs, nowMs), 20 * 60_000);
+    assert.equal(sumLogs(remainingLogs, nowMs), 40 * 60_000);
+    assert.equal(remainingLogs[0].manual, true);
+});
+
+test('chunkTimeFromTask rejects unknown source task ID and non-positive durations', () => {
+    const nowMs = Date.now();
+    state.tasks = [{
+        id: 'src-3',
+        title: 'Existing',
+        priority: 'medium',
+        timeLog: [{ id: 'l1', start: new Date(nowMs - 30 * 60_000).toISOString(), end: new Date(nowMs).toISOString() }],
+        journal: []
+    }];
+
+    const missingRes = chunkTimeFromTask('does-not-exist', 'New', 'high', 5 * 60_000);
+    assert.equal(missingRes.ok, false);
+    assert.match(missingRes.error, /not found/i);
+
+    const zeroRes = chunkTimeFromTask('src-3', 'New', 'high', 0);
+    assert.equal(zeroRes.ok, false);
+    assert.match(zeroRes.error, /valid duration/i);
+
+    const negRes = chunkTimeFromTask('src-3', 'New', 'high', -1000);
+    assert.equal(negRes.ok, false);
+    assert.equal(state.tasks.length, 1);
+});
