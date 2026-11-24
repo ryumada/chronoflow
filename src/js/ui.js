@@ -7,7 +7,7 @@ import { state } from './state.js';
 import { formatTime, formatDate, getTaskDuration } from './utils.js';
 import { sounds } from './audio.js';
 import { saveData } from './persistence.js';
-import { playTask, pauseTask, stopTask, deleteTask, changeTaskPriority } from './tasks.js';
+import { playTask, pauseTask, stopTask, deleteTask, changeTaskPriority, chunkTimeFromTask } from './tasks.js';
 import { openJournalModal, addJournal } from './journal.js';
 
 export function renderTasks(newTaskId = null) {
@@ -89,6 +89,16 @@ export function renderTasks(newTaskId = null) {
                             </svg>
                             Add Manual Time
                         </button>
+                        <button onclick="openChunkTimeModal('${task.id}')" class="task-menu-item">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="6" cy="6" r="3"></circle>
+                                <circle cx="6" cy="18" r="3"></circle>
+                                <line x1="20" y1="4" x2="8.12" y2="15.88"></line>
+                                <line x1="14.47" y1="14.48" x2="20" y2="20"></line>
+                                <line x1="8.12" y1="8.12" x2="12" y2="12"></line>
+                            </svg>
+                            Chunk Time
+                        </button>
                         <button onclick="editTaskTitle('${task.id}')" class="task-menu-item">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                             Edit Name
@@ -114,6 +124,9 @@ export function renderTasks(newTaskId = null) {
     window.deleteTask = deleteTask;
     window.openJournalModal = openJournalModal;
     window.openManualTimeModal = openManualTimeModal;
+    window.openChunkTimeModal = openChunkTimeModal;
+    window.closeChunkTimeModal = closeChunkTimeModal;
+    window.chunkTaskTime = chunkTaskTime;
     window.toggleTaskMenu = toggleTaskMenu;
     window.editTaskTitle = editTaskTitle;
     window.changeTaskPriority = changeTaskPriority;
@@ -348,6 +361,61 @@ export function addManualTime() {
 
     sounds.playClick();
     closeManualTimeModal();
+}
+
+export function openChunkTimeModal(taskId) {
+    const task = state.tasks.find(t => t.id === taskId);
+    if (!task) return;
+
+    const menu = document.getElementById(`menu-${taskId}`);
+    if (menu) menu.classList.remove('show');
+
+    const totalMs = getTaskDuration(task);
+    if (totalMs < 60000) {
+        document.getElementById('errorMessage').textContent = "This task needs at least 1 minute of tracked time before you can chunk it.";
+        document.getElementById('errorModal').classList.remove('hidden');
+        sounds.playError();
+        return;
+    }
+
+    state.currentChunkTaskId = taskId;
+    document.getElementById('chunkTimeModalTitle').textContent = `Chunk Time from: ${task.title}`;
+    document.getElementById('chunkAvailableTime').textContent = `(Available: ${formatTime(totalMs, state.timerRefreshRate === 1000)})`;
+    document.getElementById('chunkTaskTitleInput').value = '';
+    document.getElementById('chunkTaskPriority').value = task.priority || 'medium';
+    document.getElementById('chunkHoursInput').value = 0;
+    document.getElementById('chunkMinutesInput').value = 0;
+    document.getElementById('chunkTimeModal').classList.remove('hidden');
+    document.getElementById('chunkTaskTitleInput').focus();
+}
+
+export function closeChunkTimeModal() {
+    document.getElementById('chunkTimeModal').classList.add('hidden');
+    state.currentChunkTaskId = null;
+}
+
+export function chunkTaskTime() {
+    if (!state.currentChunkTaskId) return;
+
+    const title = document.getElementById('chunkTaskTitleInput').value;
+    const priority = document.getElementById('chunkTaskPriority').value;
+    const hours = parseInt(document.getElementById('chunkHoursInput').value) || 0;
+    const minutes = parseInt(document.getElementById('chunkMinutesInput').value) || 0;
+
+    if (hours < 0 || minutes < 0) {
+        alert("Duration cannot be negative.");
+        return;
+    }
+
+    const durationMs = (hours * 60 * 60 * 1000) + (minutes * 60 * 1000);
+    const result = chunkTimeFromTask(state.currentChunkTaskId, title, priority, durationMs);
+    if (!result.ok) {
+        alert(result.error);
+        return;
+    }
+
+    sounds.playClick();
+    closeChunkTimeModal();
 }
 
 // Attach outside clicks to menu closer

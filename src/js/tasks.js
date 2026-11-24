@@ -190,6 +190,116 @@ export function changeTaskPriority(id, priority) {
     renderTasks();
 }
 
+/**
+ * Carves `chunkMs` milliseconds from the end of `timeLog` while preserving
+ * an active running log if the task was running.
+ */
+export function splitTimeLogs(timeLog, chunkMs, nowMs = Date.now()) {
+    const wasRunning = timeLog.some(l => l.end === null);
+    let remainingToCarve = chunkMs;
+    const chunkedLogs = [];
+    const remainingReversed = [];
+
+    for (let i = timeLog.length - 1; i >= 0; i--) {
+        const log = timeLog[i];
+        if (remainingToCarve <= 0) {
+            remainingReversed.push(log);
+            continue;
+        }
+
+        const logStart = new Date(log.start).getTime();
+        const logEnd = log.end ? new Date(log.end).getTime() : nowMs;
+        const logDur = Math.max(0, logEnd - logStart);
+
+        if (logDur <= 0) continue;
+
+        if (remainingToCarve >= logDur) {
+            chunkedLogs.push({
+                id: crypto.randomUUID(),
+                start: new Date(logStart).toISOString(),
+                end: new Date(logEnd).toISOString(),
+                ...(log.manual ? { manual: true } : {})
+            });
+            remainingToCarve -= logDur;
+        } else {
+            const splitPoint = logEnd - remainingToCarve;
+            chunkedLogs.push({
+                id: crypto.randomUUID(),
+                start: new Date(splitPoint).toISOString(),
+                end: new Date(logEnd).toISOString(),
+                ...(log.manual ? { manual: true } : {})
+            });
+            remainingReversed.push({
+                ...log,
+                start: new Date(logStart).toISOString(),
+                end: new Date(splitPoint).toISOString()
+            });
+            remainingToCarve = 0;
+        }
+    }
+
+    const remainingLogs = remainingReversed.reverse();
+    if (wasRunning) {
+        remainingLogs.push({
+            id: crypto.randomUUID(),
+            start: new Date(nowMs).toISOString(),
+            end: null
+        });
+    }
+
+    return {
+        remainingLogs,
+        chunkedLogs: chunkedLogs.reverse(),
+        wasRunning
+    };
+}
+
+export function chunkTimeFromTask(sourceTaskId, newTitle, priority = 'medium', durationMs) {
+    const task = state.tasks.find(t => t.id === sourceTaskId);
+    if (!task) return { ok: false, error: 'Source task not found.' };
+
+    const trimmedTitle = (newTitle || '').trim();
+    if (!trimmedTitle) {
+        return { ok: false, error: 'Please enter a name for the new task.' };
+    }
+
+    if (!durationMs || durationMs <= 0) {
+        return { ok: false, error: 'Please enter a valid duration.' };
+    }
+
+    const nowMs = Date.now();
+    const totalDuration = task.timeLog.reduce((total, log) => {
+        const start = new Date(log.start).getTime();
+        const end = log.end ? new Date(log.end).getTime() : nowMs;
+        return total + Math.max(0, end - start);
+    }, 0);
+
+    if (durationMs > totalDuration) {
+        return { ok: false, error: 'Chunk duration cannot exceed the task\'s total tracked time.' };
+    }
+
+    const { remainingLogs, chunkedLogs, wasRunning } = splitTimeLogs(task.timeLog, durationMs, nowMs);
+    task.timeLog = remainingLogs;
+
+    const newTask = {
+        id: crypto.randomUUID(),
+        title: trimmedTitle,
+        priority: priority || 'medium',
+        timeLog: chunkedLogs,
+        journal: [],
+        createdAt: new Date(nowMs).toISOString()
+    };
+
+    state.tasks.unshift(newTask);
+
+    if (wasRunning && state.activeTaskId === task.id) {
+        updateGlobalUI(task, 'running');
+    }
+
+    saveData();
+    return { ok: true, newTask };
+}
+
 export function performDelete(id) {
     if (state.activeTaskId === id) {
         state.activeTaskId = null;

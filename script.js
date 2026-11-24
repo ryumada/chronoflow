@@ -6,7 +6,7 @@
 import { state } from './src/js/state.js';
 import { loadData, saveData } from './src/js/persistence.js';
 import { loadTheme, toggleTheme } from './src/js/theme.js';
-import { renderTasks, startGlobalTicker, closeErrorModal, closeConfirmModal, closeManualTimeModal, addManualTime } from './src/js/ui.js';
+import { renderTasks, startGlobalTicker, closeErrorModal, closeConfirmModal, closeManualTimeModal, addManualTime, closeChunkTimeModal, chunkTaskTime } from './src/js/ui.js';
 import { renderHistory, changePeriod, generateReport, copyReportToClipboard } from './src/js/history.js';
 import { addTask, playTask, generateTasksReport, copyTasksToClipboard } from './src/js/tasks.js';
 import { sounds } from './src/js/audio.js';
@@ -245,6 +245,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (manualTimeModal) {
         manualTimeModal.addEventListener('click', (e) => {
             if (e.target.id === 'manualTimeModal') closeManualTimeModal();
+        });
+    }
+
+    // Chunk Time Modal Overlay Click
+    const chunkTimeModal = document.getElementById('chunkTimeModal');
+    if (chunkTimeModal) {
+        chunkTimeModal.addEventListener('click', (e) => {
+            if (e.target.id === 'chunkTimeModal') closeChunkTimeModal();
         });
     }
 
