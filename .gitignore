@@ -1,16 +1,5 @@
 .vscode
 REPO_MAP.md
 
-# Graphify transient run state (keep graph.json, graph.html, GRAPH_REPORT.md)
-graphify-out/**/manifest.json
-graphify-out/cache/
-graphify-out/.graphify_root
-graphify-out/.graphify_python
-graphify-out/**/.graphify_labels.json.sig
-graphify-out/**/needs_update
-graphify-out/**/.*.tmp
-graphify-out/**/.graphify_cached.json
-graphify-out/**/.graphify_analysis.json
-graphify-out/**/.graphify_semantic_marker
-graphify-out/**/.graphify_uncached.txt
-graphify-out/[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]/
+# Graphify (on-demand only for code repos)
+graphify-out/
